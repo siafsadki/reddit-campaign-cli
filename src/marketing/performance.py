@@ -1,4 +1,4 @@
-"""서브레딧별 성과 추적 + 전략 조정."""
+"""By subreddit result tracking + strategy adjustment."""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ class SubredditPerformance:
     avg_score: float
     avg_comments: float
     positive_ratio: float
-    effort_score: float    # 우리가 투입한 노력
-    roi_score: float       # 성과/노력
+    effort_score: float    # we invested effort
+    roi_score: float       # result/effort
     trend: str             # "improving", "stable", "declining"
 
 
 def get_subreddit_rankings(db: StateDB) -> list[SubredditPerformance]:
-    """서브레딧별 성과 순위."""
-    # submissions에서 서브레딧별 통계
+    """By subreddit result ranking."""
+    # submissionsat By subreddit statistics
     subs = db.conn.execute(
         "SELECT subreddit, COUNT(*) as cnt FROM submissions "
         "WHERE subreddit IS NOT NULL GROUP BY subreddit"
@@ -33,7 +33,7 @@ def get_subreddit_rankings(db: StateDB) -> list[SubredditPerformance]:
     for row in subs:
         sub = row["subreddit"]
 
-        # 메트릭 평균
+        # metric average
         metrics = db.conn.execute(
             "SELECT AVG(m.upvotes) as avg_up, AVG(m.comment_count) as avg_cm "
             "FROM metrics m JOIN submissions s ON m.submission_id = s.reddit_id "
@@ -44,13 +44,13 @@ def get_subreddit_rankings(db: StateDB) -> list[SubredditPerformance]:
         avg_score = metrics["avg_up"] or 0 if metrics else 0
         avg_comments = metrics["avg_cm"] or 0 if metrics else 0
 
-        # 우리가 쓴 댓글 수 (노력 지표)
+        # we written comment number (effort characteristic)
         effort = db.conn.execute(
             "SELECT COUNT(*) as cnt FROM comments WHERE subreddit = ?",
             (sub,),
         ).fetchone()["cnt"]
 
-        # ROI (성과/노력)
+        # ROI (result/effort)
         roi = (avg_score + avg_comments * 2) / max(1, effort)
 
         results.append(SubredditPerformance(
@@ -59,7 +59,7 @@ def get_subreddit_rankings(db: StateDB) -> list[SubredditPerformance]:
             total_comments=effort,
             avg_score=round(avg_score, 1),
             avg_comments=round(avg_comments, 1),
-            positive_ratio=0,  # TODO: 감정 분석 데이터 연동
+            positive_ratio=0,  # TODO: emotion analyze data peristalsis
             effort_score=effort,
             roi_score=round(roi, 2),
             trend="stable",
@@ -70,15 +70,15 @@ def get_subreddit_rankings(db: StateDB) -> list[SubredditPerformance]:
 
 
 def suggest_effort_reallocation(rankings: list[SubredditPerformance]) -> dict[str, str]:
-    """노력 재배분 제안."""
+    """effort redistribution proposal."""
     suggestions = {}
     for r in rankings:
         if r.roi_score >= 5:
-            suggestions[r.subreddit] = "increase"  # 노력 증가
+            suggestions[r.subreddit] = "increase"  # effort increase
         elif r.roi_score >= 2:
-            suggestions[r.subreddit] = "maintain"   # 유지
+            suggestions[r.subreddit] = "maintain"   # maintain
         elif r.roi_score >= 0.5:
-            suggestions[r.subreddit] = "reduce"     # 축소
+            suggestions[r.subreddit] = "reduce"     # reduction
         else:
-            suggestions[r.subreddit] = "stop"       # 중단 검토
+            suggestions[r.subreddit] = "stop"       # interruption examine
     return suggestions

@@ -1,4 +1,4 @@
-"""Reddit 활동 대시보드 — 모든 활동 내역 조회."""
+"""Reddit activity dashboard — every activity history check."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ console = Console()
 
 
 def show_dashboard(db_path: str = "data/campaign.db", date: str | None = None):
-    """전체 활동 대시보드."""
+    """entire activity dashboard."""
     db = StateDB(db_path)
     today = date or datetime.now().strftime("%Y-%m-%d")
 
@@ -86,7 +86,7 @@ def show_dashboard(db_path: str = "data/campaign.db", date: str | None = None):
 
 
 def _show_recent_comments(db: StateDB, limit: int = 20):
-    """최근 댓글 내역."""
+    """recent comment history."""
     comments = db.get_comments()
     if not comments:
         return
@@ -113,7 +113,7 @@ def _show_recent_comments(db: StateDB, limit: int = 20):
 
 
 def _show_recent_posts(db: StateDB):
-    """최근 포스트 내역."""
+    """recent post history."""
     submissions = db.get_submissions()
     if not submissions:
         return
@@ -138,7 +138,7 @@ def _show_recent_posts(db: StateDB):
 
 
 def _show_recent_browsed(db: StateDB, limit: int = 15):
-    """최근 읽은 포스트."""
+    """recent read post."""
     browsed = db.get_browsed_posts()
     if not browsed:
         return
@@ -164,7 +164,7 @@ def _show_recent_browsed(db: StateDB, limit: int = 15):
 
 
 def _show_recent_upvotes(db: StateDB, limit: int = 15):
-    """최근 좋아요."""
+    """recent great."""
     upvotes = db.get_upvotes()
     if not upvotes:
         return
@@ -188,7 +188,7 @@ def _show_recent_upvotes(db: StateDB, limit: int = 15):
 
 
 def _show_campaign_progress(db: StateDB):
-    """캠페인 진행 현황."""
+    """campaign progress current situation."""
     statuses = db.get_all_day_statuses()
     if not statuses:
         return

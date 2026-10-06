@@ -53,6 +53,27 @@ cp campaign.example.toml campaign.toml
 # Edit campaign.toml with your product info
 ```
 
+### Guided Windows startup
+
+On Windows, use the guided PowerShell script. It pauses for confirmation before
+installing dependencies, opening Chrome, or performing real Reddit actions:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\start.ps1
+```
+
+The script runs a dry-run first. To repeat only the safe checks, use:
+
+```powershell
+.\start.ps1 -DryRun
+```
+
+Before the real run, load the `extension/` folder through
+`chrome://extensions`, log into Reddit in Chrome, and finish editing
+`campaign.toml`. The script never proceeds to real posting without an explicit
+confirmation.
+
 ## Usage
 
 ### 1. Set up your campaign

@@ -1,13 +1,13 @@
-"""30일 전략 스케줄 — 카르마 빌딩 우선, 점진적 활동 확대.
+"""30Day strategy schedule — karma building first of all, gradual activity enlargement.
 
-기존 마크다운 파일 의존 없이 프로그래밍 방식으로 전략 관리.
-Phase 1: 카르마 빌딩 (앱 언급 없이)
-Phase 2: 카르마 + 가벼운 씨뿌리기
-Phase 3: 씨뿌리기 + 첫 포스트
-Phase 4: 본격 캠페인
+existing markdown file dependence without programming in a way strategy management.
+Phase 1: karma building (app mention without)
+Phase 2: karma + light sow seeds
+Phase 3: sow seeds + first post
+Phase 4: authentic campaign
 
-campaign.toml이 있으면 config 기반, 없으면 기본 하드코딩 서브레딧 사용.
-DB에 커스텀 스케줄이 있으면 자동 생성된 스케줄보다 우선 적용.
+campaign.tomlthis If there is config based, If there is no basic hard coding subreddit use.
+DBto custom schedule If there is automatic created than schedule first of all apply.
 """
 
 from __future__ import annotations
@@ -18,19 +18,19 @@ from enum import Enum
 
 
 class Phase(Enum):
-    KARMA_BUILD = "karma_build"       # 순수 카르마 빌딩
-    LIGHT_SEED = "light_seed"         # 카르마 + 가벼운 씨뿌리기
-    SEED_AND_POST = "seed_and_post"   # 씨뿌리기 + 포스팅
-    FULL_CAMPAIGN = "full_campaign"   # 전체 캠페인
+    KARMA_BUILD = "karma_build"       # pure karma building
+    LIGHT_SEED = "light_seed"         # karma + light sow seeds
+    SEED_AND_POST = "seed_and_post"   # sow seeds + post
+    FULL_CAMPAIGN = "full_campaign"   # entire campaign
 
 
 class TaskType(Enum):
-    KARMA_COMMENT = "karma_comment"   # 앱 무관 도움 댓글
-    SEED_COMMENT = "seed_comment"     # 자연스러운 앱 언급 댓글
-    POST = "post"                     # 서브레딧 포스트
-    MONITOR = "monitor"              # 기존 포스트 모니터링
-    REST = "rest"                     # 휴식
-    REVIEW = "review"                # 성과 분석
+    KARMA_COMMENT = "karma_comment"   # app military officer help comment
+    SEED_COMMENT = "seed_comment"     # natural app mention comment
+    POST = "post"                     # subreddit post
+    MONITOR = "monitor"              # existing post monitoring
+    REST = "rest"                     # rest
+    REVIEW = "review"                # result analyze
 
 
 @dataclass
@@ -51,7 +51,7 @@ class DaySchedule:
     description: str = ""
 
 
-# 카르마 빌딩용 서브레딧 + 키워드
+# karma For buildings subreddit + keyword
 KARMA_SUBS = {
     "commandline": ["terminal workflow", "cli tools", "shell productivity", "zsh fish bash"],
     "programming": ["developer tools", "code editor", "productivity tips", "IDE setup"],
@@ -67,7 +67,7 @@ KARMA_SUBS = {
     "selfhosted": ["self-hosted tools", "server dashboard"],
 }
 
-# 씨뿌리기 타겟 (앱과 관련된 서브레딧)
+# sow seeds target (app and relevant subreddit)
 SEED_SUBS = {
     "commandline": ["terminal multiplexer", "terminal tabs", "tmux alternative"],
     "webdev": ["developer terminal", "web dev tools", "terminal setup"],
@@ -79,27 +79,27 @@ SEED_SUBS = {
     "opensource": ["terminal emulator", "developer tools"],
 }
 
-# 포스팅 서브레딧 순서 (점진적으로)
+# post subreddit order (gradually)
 POST_ORDER = [
-    # Phase 3: 작은 서브부터
-    {"sub": "SideProject", "title_hint": "Show: 터미널 앱 공유"},
-    {"sub": "coolgithubprojects", "title_hint": "GitHub 프로젝트 공유"},
-    # Phase 4: 중간 규모
-    {"sub": "commandline", "title_hint": "CLI 워크플로우 향상"},
-    {"sub": "rust", "title_hint": "Tauri 기반 터미널"},
-    {"sub": "macapps", "title_hint": "Mac 터미널 앱"},
-    {"sub": "webdev", "title_hint": "개발자 터미널 도구"},
-    {"sub": "programming", "title_hint": "개발 도구 소개"},
-    {"sub": "linux", "title_hint": "크로스플랫폼 터미널"},
-    {"sub": "opensource", "title_hint": "오픈소스 터미널"},
-    {"sub": "selfhosted", "title_hint": "셀프호스트 터미널"},
-    {"sub": "devops", "title_hint": "DevOps 터미널 도구"},
-    {"sub": "neovim", "title_hint": "Neovim 통합 터미널"},
-    {"sub": "vim", "title_hint": "Vim 워크플로우"},
+    # Phase 3: small From the serve
+    {"sub": "SideProject", "title_hint": "Show: terminal app share"},
+    {"sub": "coolgithubprojects", "title_hint": "GitHub project share"},
+    # Phase 4: middle scale
+    {"sub": "commandline", "title_hint": "CLI Workflow elevation"},
+    {"sub": "rust", "title_hint": "Tauri based terminal"},
+    {"sub": "macapps", "title_hint": "Mac terminal app"},
+    {"sub": "webdev", "title_hint": "developer terminal equipment"},
+    {"sub": "programming", "title_hint": "development equipment introduction"},
+    {"sub": "linux", "title_hint": "cross platform terminal"},
+    {"sub": "opensource", "title_hint": "open source terminal"},
+    {"sub": "selfhosted", "title_hint": "self host terminal"},
+    {"sub": "devops", "title_hint": "DevOps terminal equipment"},
+    {"sub": "neovim", "title_hint": "Neovim integration terminal"},
+    {"sub": "vim", "title_hint": "Vim Workflow"},
 ]
 
 
-# 캠페인 전체 날짜 순서 (공유 상수)
+# campaign entire date order (share constant)
 DAY_ORDER = [
     "prep-d3", "prep-d2", "prep-d1",
     *[f"day-{i:02d}" for i in range(1, 31)],
@@ -107,23 +107,23 @@ DAY_ORDER = [
 
 
 def build_schedule() -> list[DaySchedule]:
-    """30일 전체 스케줄 생성."""
+    """30Day entire schedule generation."""
     schedule = []
 
-    # ═══ Phase 1: Days 1-7 — 순수 카르마 빌딩 ═══
+    # ═══ Phase 1: Days 1-7 — pure karma building ═══
     karma_subs_list = list(KARMA_SUBS.keys())
 
     for day in range(1, 8):
         if day == 7:
-            # Day 7: 휴식 + 리뷰
+            # Day 7: rest + review
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.KARMA_BUILD,
-                tasks=[DayTask(task_type=TaskType.REVIEW, notes="1주차 카르마 빌딩 성과 분석")],
-                description="1주차 리뷰 — 카르마 현황 확인",
+                tasks=[DayTask(task_type=TaskType.REVIEW, notes="1parking karma building result analyze")],
+                description="1parking review — karma current situation check",
             ))
         else:
-            # 하루 2-3개 서브레딧에서 도움 댓글
+            # day 2-3dog On the subreddit help comment
             subs_for_day = karma_subs_list[(day - 1) * 2: (day - 1) * 2 + 3]
             if not subs_for_day:
                 subs_for_day = karma_subs_list[:2]
@@ -136,16 +136,16 @@ def build_schedule() -> list[DaySchedule]:
                     subreddits=[sub],
                     search_keywords=keywords,
                     max_comments=2,
-                    notes=f"r/{sub}에서 도움 댓글 (앱 언급 금지)",
+                    notes=f"r/{sub}at help comment (app mention prohibition)",
                 ))
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.KARMA_BUILD,
                 tasks=tasks,
-                description=f"카르마 빌딩: {', '.join(subs_for_day)}",
+                description=f"karma building: {', '.join(subs_for_day)}",
             ))
 
-    # ═══ Phase 2: Days 8-14 — 카르마 + 가벼운 씨뿌리기 ═══
+    # ═══ Phase 2: Days 8-14 — karma + light sow seeds ═══
     seed_subs_list = list(SEED_SUBS.keys())
 
     for day in range(8, 15):
@@ -153,22 +153,22 @@ def build_schedule() -> list[DaySchedule]:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.LIGHT_SEED,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 14:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.LIGHT_SEED,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="2주차 성과 분석"),
-                    DayTask(task_type=TaskType.MONITOR, notes="기존 활동 반응 확인"),
+                    DayTask(task_type=TaskType.REVIEW, notes="2parking result analyze"),
+                    DayTask(task_type=TaskType.MONITOR, notes="existing activity reaction check"),
                 ],
-                description="2주차 리뷰",
+                description="2parking review",
             ))
         else:
             tasks = []
-            # 카르마 빌딩 1-2개
+            # karma building 1-2dog
             karma_idx = (day - 8) % len(karma_subs_list)
             karma_sub = karma_subs_list[karma_idx]
             tasks.append(DayTask(
@@ -176,10 +176,10 @@ def build_schedule() -> list[DaySchedule]:
                 subreddits=[karma_sub],
                 search_keywords=KARMA_SUBS[karma_sub],
                 max_comments=2,
-                notes=f"카르마: r/{karma_sub}",
+                notes=f"karma: r/{karma_sub}",
             ))
 
-            # 씨뿌리기 1개 (자연스럽게)
+            # sow seeds 1dog (naturally)
             seed_idx = (day - 8) % len(seed_subs_list)
             seed_sub = seed_subs_list[seed_idx]
             tasks.append(DayTask(
@@ -187,17 +187,17 @@ def build_schedule() -> list[DaySchedule]:
                 subreddits=[seed_sub],
                 search_keywords=SEED_SUBS[seed_sub],
                 max_comments=1,
-                notes=f"씨뿌리기: r/{seed_sub} (자연스러운 언급)",
+                notes=f"sow seeds: r/{seed_sub} (natural mention)",
             ))
 
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.LIGHT_SEED,
                 tasks=tasks,
-                description=f"카르마({karma_sub}) + 씨뿌리기({seed_sub})",
+                description=f"karma({karma_sub}) + sow seeds({seed_sub})",
             ))
 
-    # ═══ Phase 3: Days 15-21 — 씨뿌리기 + 첫 포스트 ═══
+    # ═══ Phase 3: Days 15-21 — sow seeds + first post ═══
     post_idx = 0
 
     for day in range(15, 22):
@@ -205,21 +205,21 @@ def build_schedule() -> list[DaySchedule]:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.SEED_AND_POST,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 21:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.SEED_AND_POST,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="3주차 성과 분석 + 포스트 반응"),
-                    DayTask(task_type=TaskType.MONITOR, notes="포스트 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="3parking result analyze + post reaction"),
+                    DayTask(task_type=TaskType.MONITOR, notes="post monitoring"),
                 ],
-                description="3주차 리뷰",
+                description="3parking review",
             ))
         elif day in (16, 19):
-            # 포스트 날 — 작은 서브부터
+            # post me — small From the serve
             tasks = []
             if post_idx < len(POST_ORDER):
                 post_info = POST_ORDER[post_idx]
@@ -230,7 +230,7 @@ def build_schedule() -> list[DaySchedule]:
                 ))
                 post_idx += 1
 
-            # 씨뿌리기도 병행
+            # Sowing seeds parallelism
             seed_idx = (day - 15) % len(seed_subs_list)
             seed_sub = seed_subs_list[seed_idx]
             tasks.append(DayTask(
@@ -238,17 +238,17 @@ def build_schedule() -> list[DaySchedule]:
                 subreddits=[seed_sub],
                 search_keywords=SEED_SUBS[seed_sub],
                 max_comments=2,
-                notes=f"씨뿌리기: r/{seed_sub}",
+                notes=f"sow seeds: r/{seed_sub}",
             ))
 
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.SEED_AND_POST,
                 tasks=tasks,
-                description=f"포스트({post_info['sub']}) + 씨뿌리기",
+                description=f"post({post_info['sub']}) + sow seeds",
             ))
         else:
-            # 씨뿌리기 + 카르마
+            # sow seeds + karma
             tasks = []
             seed_idx = (day - 15) % len(seed_subs_list)
             seed_sub = seed_subs_list[seed_idx]
@@ -260,46 +260,46 @@ def build_schedule() -> list[DaySchedule]:
             ))
             tasks.append(DayTask(
                 task_type=TaskType.MONITOR,
-                notes="기존 포스트 반응 확인",
+                notes="existing post reaction check",
             ))
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.SEED_AND_POST,
                 tasks=tasks,
-                description=f"씨뿌리기({seed_sub}) + 모니터링",
+                description=f"sow seeds({seed_sub}) + monitoring",
             ))
 
-    # ═══ Phase 4: Days 22-30 — 본격 캠페인 ═══
+    # ═══ Phase 4: Days 22-30 — authentic campaign ═══
     for day in range(22, 31):
         if day == 27:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.FULL_CAMPAIGN,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 28:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.FULL_CAMPAIGN,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="4주차 + 전체 성과 분석"),
-                    DayTask(task_type=TaskType.MONITOR, notes="모든 포스트 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="4parking + entire result analyze"),
+                    DayTask(task_type=TaskType.MONITOR, notes="every post monitoring"),
                 ],
-                description="4주차 리뷰",
+                description="4parking review",
             ))
         elif day == 30:
             schedule.append(DaySchedule(
                 day=day,
                 phase=Phase.FULL_CAMPAIGN,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="최종 성과 분석 + ROI 보고서"),
-                    DayTask(task_type=TaskType.MONITOR, notes="전체 포스트 최종 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="final result analyze + ROI report"),
+                    DayTask(task_type=TaskType.MONITOR, notes="entire post final monitoring"),
                 ],
-                description="최종 리뷰 + ROI",
+                description="final review + ROI",
             ))
         elif day in (22, 24, 26, 29):
-            # 포스트 날
+            # post me
             tasks = []
             if post_idx < len(POST_ORDER):
                 post_info = POST_ORDER[post_idx]
@@ -310,7 +310,7 @@ def build_schedule() -> list[DaySchedule]:
                 ))
                 post_idx += 1
 
-            # 씨뿌리기 2개
+            # sow seeds 2dog
             for i in range(2):
                 s_idx = ((day - 22) * 2 + i) % len(seed_subs_list)
                 s_sub = seed_subs_list[s_idx]
@@ -325,14 +325,14 @@ def build_schedule() -> list[DaySchedule]:
                 day=day,
                 phase=Phase.FULL_CAMPAIGN,
                 tasks=tasks,
-                description=f"포스트 + 씨뿌리기",
+                description=f"post + sow seeds",
             ))
         else:
-            # 댓글 관리 + 씨뿌리기
+            # comment management + sow seeds
             tasks = []
             tasks.append(DayTask(
                 task_type=TaskType.MONITOR,
-                notes="포스트 댓글 응답",
+                notes="post comment response",
             ))
             s_idx = (day - 22) % len(seed_subs_list)
             s_sub = seed_subs_list[s_idx]
@@ -352,14 +352,14 @@ def build_schedule() -> list[DaySchedule]:
                 day=day,
                 phase=Phase.FULL_CAMPAIGN,
                 tasks=tasks,
-                description=f"모니터링 + 씨뿌리기 + 카르마",
+                description=f"monitoring + sow seeds + karma",
             ))
 
     return schedule
 
 
 def build_schedule_from_config(config) -> list[DaySchedule]:
-    """CampaignConfig 기반 30일 스케줄 생성."""
+    """CampaignConfig based 30Day schedule generation."""
     schedule = []
 
     karma_subs = {st.sub: st.keywords for st in config.karma_subs} if config.karma_subs else KARMA_SUBS
@@ -372,13 +372,13 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
     karma_subs_list = list(karma_subs.keys())
     seed_subs_list = list(seed_subs.keys())
 
-    # Phase 1: Days 1-7 — 카르마 빌딩
+    # Phase 1: Days 1-7 — karma building
     for day in range(1, 8):
         if day == 7:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.KARMA_BUILD,
-                tasks=[DayTask(task_type=TaskType.REVIEW, notes="1주차 카르마 빌딩 성과 분석")],
-                description="1주차 리뷰 — 카르마 현황 확인",
+                tasks=[DayTask(task_type=TaskType.REVIEW, notes="1parking karma building result analyze")],
+                description="1parking review — karma current situation check",
             ))
         else:
             subs_for_day = karma_subs_list[(day - 1) * 2: (day - 1) * 2 + 3]
@@ -394,29 +394,29 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 tasks.append(DayTask(
                     task_type=TaskType.KARMA_COMMENT,
                     subreddits=[sub], search_keywords=kw, max_comments=2,
-                    notes=f"r/{sub}에서 도움 댓글 (앱 언급 금지)",
+                    notes=f"r/{sub}at help comment (app mention prohibition)",
                 ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.KARMA_BUILD, tasks=tasks,
-                description=f"카르마 빌딩: {', '.join(subs_for_day)}",
+                description=f"karma building: {', '.join(subs_for_day)}",
             ))
 
-    # Phase 2: Days 8-14 — 카르마 + 씨뿌리기
+    # Phase 2: Days 8-14 — karma + sow seeds
     for day in range(8, 15):
         if day == 13:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.LIGHT_SEED,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 14:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.LIGHT_SEED,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="2주차 성과 분석"),
-                    DayTask(task_type=TaskType.MONITOR, notes="기존 활동 반응 확인"),
+                    DayTask(task_type=TaskType.REVIEW, notes="2parking result analyze"),
+                    DayTask(task_type=TaskType.MONITOR, notes="existing activity reaction check"),
                 ],
-                description="2주차 리뷰",
+                description="2parking review",
             ))
         else:
             tasks = []
@@ -427,7 +427,7 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 subreddits=[karma_sub],
                 search_keywords=karma_subs.get(karma_sub, ["developer tools"]),
                 max_comments=2,
-                notes=f"카르마: r/{karma_sub}",
+                notes=f"karma: r/{karma_sub}",
             ))
             seed_idx = (day - 8) % len(seed_subs_list)
             seed_sub = seed_subs_list[seed_idx]
@@ -436,30 +436,30 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 subreddits=[seed_sub],
                 search_keywords=seed_subs.get(seed_sub, ["tool"]),
                 max_comments=1,
-                notes=f"씨뿌리기: r/{seed_sub} (자연스러운 언급)",
+                notes=f"sow seeds: r/{seed_sub} (natural mention)",
             ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.LIGHT_SEED, tasks=tasks,
-                description=f"카르마({karma_sub}) + 씨뿌리기({seed_sub})",
+                description=f"karma({karma_sub}) + sow seeds({seed_sub})",
             ))
 
-    # Phase 3: Days 15-21 — 씨뿌리기 + 포스트
+    # Phase 3: Days 15-21 — sow seeds + post
     post_idx = 0
     for day in range(15, 22):
         if day == 20:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.SEED_AND_POST,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 21:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.SEED_AND_POST,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="3주차 성과 분석 + 포스트 반응"),
-                    DayTask(task_type=TaskType.MONITOR, notes="포스트 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="3parking result analyze + post reaction"),
+                    DayTask(task_type=TaskType.MONITOR, notes="post monitoring"),
                 ],
-                description="3주차 리뷰",
+                description="3parking review",
             ))
         elif day in (16, 19):
             tasks = []
@@ -478,11 +478,11 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 subreddits=[seed_sub],
                 search_keywords=seed_subs.get(seed_sub, ["tool"]),
                 max_comments=2,
-                notes=f"씨뿌리기: r/{seed_sub}",
+                notes=f"sow seeds: r/{seed_sub}",
             ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.SEED_AND_POST, tasks=tasks,
-                description=f"포스트({post_order[post_idx-1]['sub'] if post_idx > 0 else '?'}) + 씨뿌리기",
+                description=f"post({post_order[post_idx-1]['sub'] if post_idx > 0 else '?'}) + sow seeds",
             ))
         else:
             tasks = []
@@ -495,38 +495,38 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 max_comments=2,
             ))
             tasks.append(DayTask(
-                task_type=TaskType.MONITOR, notes="기존 포스트 반응 확인",
+                task_type=TaskType.MONITOR, notes="existing post reaction check",
             ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.SEED_AND_POST, tasks=tasks,
-                description=f"씨뿌리기({seed_sub}) + 모니터링",
+                description=f"sow seeds({seed_sub}) + monitoring",
             ))
 
-    # Phase 4: Days 22-30 — 본격 캠페인
+    # Phase 4: Days 22-30 — authentic campaign
     for day in range(22, 31):
         if day == 27:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.FULL_CAMPAIGN,
-                tasks=[DayTask(task_type=TaskType.REST, notes="휴식")],
-                description="휴식일",
+                tasks=[DayTask(task_type=TaskType.REST, notes="rest")],
+                description="rest day",
             ))
         elif day == 28:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.FULL_CAMPAIGN,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="4주차 + 전체 성과 분석"),
-                    DayTask(task_type=TaskType.MONITOR, notes="모든 포스트 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="4parking + entire result analyze"),
+                    DayTask(task_type=TaskType.MONITOR, notes="every post monitoring"),
                 ],
-                description="4주차 리뷰",
+                description="4parking review",
             ))
         elif day == 30:
             schedule.append(DaySchedule(
                 day=day, phase=Phase.FULL_CAMPAIGN,
                 tasks=[
-                    DayTask(task_type=TaskType.REVIEW, notes="최종 성과 분석 + ROI 보고서"),
-                    DayTask(task_type=TaskType.MONITOR, notes="전체 포스트 최종 모니터링"),
+                    DayTask(task_type=TaskType.REVIEW, notes="final result analyze + ROI report"),
+                    DayTask(task_type=TaskType.MONITOR, notes="entire post final monitoring"),
                 ],
-                description="최종 리뷰 + ROI",
+                description="final review + ROI",
             ))
         elif day in (22, 24, 26, 29):
             tasks = []
@@ -549,12 +549,12 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
                 ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.FULL_CAMPAIGN, tasks=tasks,
-                description="포스트 + 씨뿌리기",
+                description="post + sow seeds",
             ))
         else:
             tasks = []
             tasks.append(DayTask(
-                task_type=TaskType.MONITOR, notes="포스트 댓글 응답",
+                task_type=TaskType.MONITOR, notes="post comment response",
             ))
             s_idx = (day - 22) % len(seed_subs_list)
             s_sub = seed_subs_list[s_idx]
@@ -575,14 +575,14 @@ def build_schedule_from_config(config) -> list[DaySchedule]:
             ))
             schedule.append(DaySchedule(
                 day=day, phase=Phase.FULL_CAMPAIGN, tasks=tasks,
-                description="모니터링 + 씨뿌리기 + 카르마",
+                description="monitoring + sow seeds + karma",
             ))
 
     return schedule
 
 
 def get_day_schedule(day: int, config=None) -> DaySchedule | None:
-    """특정 날의 스케줄 반환."""
+    """specific of the day schedule return."""
     sched = build_schedule_from_config(config) if config else build_schedule()
     for s in sched:
         if s.day == day:
@@ -591,7 +591,7 @@ def get_day_schedule(day: int, config=None) -> DaySchedule | None:
 
 
 def format_schedule_overview(config=None) -> str:
-    """30일 전체 스케줄 개요."""
+    """30Day entire schedule outline."""
     schedule = build_schedule_from_config(config) if config else build_schedule()
     lines = ["═══ 30-Day Campaign Schedule ═══", ""]
 
@@ -605,10 +605,10 @@ def format_schedule_overview(config=None) -> str:
         if s.phase != current_phase:
             current_phase = s.phase
             phase_names = {
-                Phase.KARMA_BUILD: "Phase 1: 카르마 빌딩 (앱 언급 없이)",
-                Phase.LIGHT_SEED: "Phase 2: 카르마 + 가벼운 씨뿌리기",
-                Phase.SEED_AND_POST: "Phase 3: 씨뿌리기 + 첫 포스트",
-                Phase.FULL_CAMPAIGN: "Phase 4: 본격 캠페인",
+                Phase.KARMA_BUILD: "Phase 1: karma building (app mention without)",
+                Phase.LIGHT_SEED: "Phase 2: karma + light sow seeds",
+                Phase.SEED_AND_POST: "Phase 3: sow seeds + first post",
+                Phase.FULL_CAMPAIGN: "Phase 4: authentic campaign",
             }
             lines.append(f"\n── {phase_names[current_phase]} ──")
 
@@ -627,7 +627,7 @@ def format_schedule_overview(config=None) -> str:
     return "\n".join(lines)
 
 
-# ═══ 커스텀 스케줄: DB에 저장된 사용자 편집 스케줄 ═══
+# ═══ custom schedule: DBto saved user edit schedule ═══
 
 def _task_to_dict(task: DayTask) -> dict:
     return {
@@ -672,14 +672,14 @@ def dict_to_day_schedule(d: dict) -> DaySchedule:
 
 
 def save_schedule_to_db(db, schedule: list[DaySchedule]):
-    """전체 스케줄을 DB에 저장."""
+    """entire schedule DBto save."""
     for s in schedule:
         tasks_json = json.dumps([_task_to_dict(t) for t in s.tasks], ensure_ascii=False)
         db.save_custom_schedule(s.day, s.phase.value, s.description, tasks_json)
 
 
 def load_schedule_from_db(db) -> list[DaySchedule]:
-    """DB에서 커스텀 스케줄 로드."""
+    """DBat custom schedule load."""
     rows = db.get_all_custom_schedules()
     result = []
     for row in rows:
@@ -694,11 +694,11 @@ def load_schedule_from_db(db) -> list[DaySchedule]:
 
 
 def get_effective_schedule(config=None, db=None) -> list[DaySchedule]:
-    """최종 스케줄: DB 커스텀 > config 기반 > 기본.
+    """final schedule: DB custom > config based > basic.
 
-    DB에 저장된 날은 커스텀 사용, 없는 날은 자동 생성.
+    DBto saved The day is custom use, no The day is automatic generation.
     """
-    # 자동 생성 스케줄
+    # automatic generation schedule
     if config:
         auto = build_schedule_from_config(config)
     else:
@@ -707,7 +707,7 @@ def get_effective_schedule(config=None, db=None) -> list[DaySchedule]:
     if not db:
         return auto
 
-    # DB 커스텀 스케줄 로드
+    # DB custom schedule load
     custom_rows = db.get_all_custom_schedules()
     if not custom_rows:
         return auto
@@ -722,7 +722,7 @@ def get_effective_schedule(config=None, db=None) -> list[DaySchedule]:
             description=row.get("description", ""),
         )
 
-    # 합성: 커스텀이 있으면 커스텀, 없으면 자동
+    # synthesis: Custom If there is custom, If there is no automatic
     result = []
     for s in auto:
         if s.day in custom_map:

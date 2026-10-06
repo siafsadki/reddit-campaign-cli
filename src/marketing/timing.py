@@ -1,6 +1,6 @@
-"""포스팅 타이밍 최적화.
+"""post timing Optimization.
 
-서브레딧별 최적 포스팅 시간 + 요일 판단.
+By subreddit optimal post hour + day of the week judgment.
 """
 
 from __future__ import annotations
@@ -26,10 +26,10 @@ class TimingAdvice:
     wait_seconds: int = 0
 
 
-# EST = UTC-5 (미국 동부)
+# EST = UTC-5 (USA eastern)
 EST_OFFSET = timedelta(hours=-5)
 
-# 서브레딧별 최적 시간 (EST 기준, hour range)
+# By subreddit optimal hour (EST standard, hour range)
 # (start_hour, end_hour, weekday_only)
 PEAK_WINDOWS: dict[str, list[tuple[int, int, bool]]] = {
     "commandline": [(9, 12, True), (18, 21, True)],
@@ -46,55 +46,55 @@ PEAK_WINDOWS: dict[str, list[tuple[int, int, bool]]] = {
     "selfhosted": [(9, 12, True), (19, 22, True)],
 }
 
-# 기본 (등록 안 된 서브)
+# basic (registration not done serve)
 DEFAULT_PEAK = [(9, 12, True)]
 
-# 피해야 할 시간대
+# avoid will do slot
 AVOID_HOURS = list(range(0, 6))  # 0-6 AM EST
 
-# 피해야 할 요일 (금요일 오후, 토요일)
+# avoid will do day of the week (friday afternoon, Saturday)
 AVOID_DAYS = {
-    4: [(14, 24)],  # 금요일 오후
-    5: [(0, 24)],   # 토요일 전체
+    4: [(14, 24)],  # friday afternoon
+    5: [(0, 24)],   # Saturday entire
 }
 
 
 def check_timing(subreddit: str, now: datetime | None = None) -> TimingAdvice:
-    """현재 시간이 포스팅에 적합한지 판단."""
+    """today time In the post Is it suitable? judgment."""
     if now is None:
         now = datetime.now(timezone.utc)
 
-    # EST로 변환
+    # ESTas conversion
     est_now = now + EST_OFFSET
     hour = est_now.hour
-    weekday = est_now.weekday()  # 0=월 ~ 6=일
+    weekday = est_now.weekday()  # 0=month ~ 6=Day
 
     sub = subreddit.replace("r/", "").lower()
 
-    # 피해야 할 시간
+    # avoid will do hour
     if hour in AVOID_HOURS:
         next_opt = _next_optimal_time(sub, est_now)
         return TimingAdvice(
             grade=TimingGrade.AVOID,
-            reason=f"새벽 시간대 (EST {hour}시) — 트래픽 최저",
+            reason=f"dawn slot (EST {hour}city) — traffic lowest",
             next_optimal=next_opt,
             wait_seconds=_seconds_until(est_now, next_opt) if next_opt else 0,
         )
 
-    # 피해야 할 요일
+    # avoid will do day of the week
     if weekday in AVOID_DAYS:
         for start, end in AVOID_DAYS[weekday]:
             if start <= hour < end:
                 next_opt = _next_optimal_time(sub, est_now)
-                day_name = ["월", "화", "수", "목", "금", "토", "일"][weekday]
+                day_name = ["month", "fury", "number", "neck", "gold", "saturday", "Day"][weekday]
                 return TimingAdvice(
                     grade=TimingGrade.POOR,
-                    reason=f"{day_name}요일 — 주말 트래픽 저조",
+                    reason=f"{day_name}day of the week — weekend traffic low tone",
                     next_optimal=next_opt,
                     wait_seconds=_seconds_until(est_now, next_opt) if next_opt else 0,
                 )
 
-    # 서브레딧별 최적 시간
+    # By subreddit optimal hour
     windows = PEAK_WINDOWS.get(sub, DEFAULT_PEAK)
     for start, end, weekday_only in windows:
         if weekday_only and weekday >= 5:
@@ -102,51 +102,51 @@ def check_timing(subreddit: str, now: datetime | None = None) -> TimingAdvice:
         if start <= hour < end:
             return TimingAdvice(
                 grade=TimingGrade.OPTIMAL,
-                reason=f"최적 시간대 (EST {hour}시, {sub})",
+                reason=f"optimal slot (EST {hour}city, {sub})",
             )
 
-    # 업무 시간이면 GOOD
+    # work If it's time GOOD
     if 7 <= hour <= 22 and weekday < 5:
         return TimingAdvice(
             grade=TimingGrade.GOOD,
-            reason=f"업무 시간대 (EST {hour}시)",
+            reason=f"work slot (EST {hour}city)",
         )
 
-    # 그 외
+    # that except
     if 7 <= hour <= 22:
         return TimingAdvice(
             grade=TimingGrade.ACCEPTABLE,
-            reason=f"주말 낮 시간 (EST {hour}시)",
+            reason=f"weekend afternoon hour (EST {hour}city)",
         )
 
     next_opt = _next_optimal_time(sub, est_now)
     return TimingAdvice(
         grade=TimingGrade.POOR,
-        reason=f"비활동 시간대 (EST {hour}시)",
+        reason=f"inactivity slot (EST {hour}city)",
         next_optimal=next_opt,
         wait_seconds=_seconds_until(est_now, next_opt) if next_opt else 0,
     )
 
 
 def _next_optimal_time(sub: str, est_now: datetime) -> datetime | None:
-    """다음 최적 시간 계산."""
+    """next optimal hour calculate."""
     windows = PEAK_WINDOWS.get(sub, DEFAULT_PEAK)
     hour = est_now.hour
     weekday = est_now.weekday()
 
-    # 오늘 남은 윈도우
+    # today remainder windows
     for start, end, weekday_only in windows:
         if weekday_only and weekday >= 5:
             continue
         if hour < start:
             return est_now.replace(hour=start, minute=0, second=0, microsecond=0)
 
-    # 다음 평일 첫 윈도우
+    # next weekdays first windows
     days_ahead = 1
     while days_ahead <= 3:
         next_day = est_now + timedelta(days=days_ahead)
         next_weekday = next_day.weekday()
-        if next_weekday < 5:  # 평일
+        if next_weekday < 5:  # weekdays
             first_start = windows[0][0] if windows else 9
             return next_day.replace(hour=first_start, minute=0, second=0, microsecond=0)
         days_ahead += 1

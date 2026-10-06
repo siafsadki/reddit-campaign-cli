@@ -1,9 +1,9 @@
-"""전자동 캠페인 실행 엔진.
+"""fully automatic campaign execution engine.
 
-python main.py auto          → 다음 미완료 날짜 1개 실행 + 모니터링 + 보고서
-python main.py auto --all    → 모든 미완료 날짜 순차 실행
-python main.py auto --daemon → 데몬 모드 (스케줄에 맞춰 자동 실행)
-python main.py auto --status → 전체 진행상황 + 다음 할 일 표시
+python main.py auto          → next Incomplete date 1dog execution + monitoring + report
+python main.py auto --all    → every Incomplete date sequential execution
+python main.py auto --daemon → daemon mode (on schedule Guess what automatic execution)
+python main.py auto --status → entire progress + next will do Day mark
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ from .parser import DayPlan, DayType, parse_all_days, resolve_day_id
 from .schedule import DAY_ORDER
 from .state import StateDB
 
-MONITOR_INTERVAL = 300  # 5분
+MONITOR_INTERVAL = 300  # 5minute
 
 
 def _get_next_pending(db: StateDB) -> str | None:
-    """다음 실행할 날짜 반환."""
+    """next run date return."""
     for day_id in DAY_ORDER:
         status = db.get_day_status(day_id)
         if status not in ("completed",):
@@ -31,7 +31,7 @@ def _get_next_pending(db: StateDB) -> str | None:
 
 
 def _get_progress(db: StateDB) -> dict:
-    """전체 진행상황."""
+    """entire progress."""
     total = len(DAY_ORDER)
     completed = 0
     in_progress = 0
@@ -60,7 +60,7 @@ def _get_progress(db: StateDB) -> dict:
 
 
 def show_auto_status(config: Config):
-    """자동 실행 상태 대시보드."""
+    """automatic execution situation dashboard."""
     from rich.panel import Panel
     from rich.table import Table
 
@@ -72,7 +72,7 @@ def show_auto_status(config: Config):
     console.print()
     console.print(Panel("[bold]Autopilot Status[/bold]", style="blue", width=70))
 
-    # 진행률
+    # progress
     bar_len = 40
     filled = int(bar_len * progress["completed"] / progress["total"])
     bar = "█" * filled + "░" * (bar_len - filled)
@@ -97,7 +97,7 @@ def show_auto_status(config: Config):
     else:
         console.print("  [green]All days completed![/green]")
 
-    # 날짜별 상태 테이블
+    # By date situation table
     console.print()
     table = Table(title="Campaign Timeline", width=70)
     table.add_column("Day", style="cyan", width=12)
@@ -127,7 +127,7 @@ def show_auto_status(config: Config):
 
 
 def run_auto_next(config: Config, dry_run: bool = False):
-    """다음 미완료 날짜 1개 실행 + 모니터링 + 영향력 보고서."""
+    """next Incomplete date 1dog execution + monitoring + influence report."""
     from .scheduler import run_day
 
     db = StateDB(config.campaign.db_path)
@@ -145,14 +145,14 @@ def run_auto_next(config: Config, dry_run: bool = False):
     console.print(f"  [bold]Autopilot: Executing {next_day}[/bold] "
                   f"({progress['completed']}/{progress['total']} done)")
 
-    # 1. 날짜 실행
+    # 1. date execution
     run_day(config, next_day, dry_run=dry_run, auto_confirm=True)
 
-    # 2. 모니터링 1회
+    # 2. monitoring 1episode
     if not dry_run:
         _run_monitor_cycle(config)
 
-    # 3. 영향력 보고서 (dry_run이 아닐 때)
+    # 3. influence report (dry_runthis Not at the time)
     if not dry_run:
         _run_influence_report(config)
 
@@ -160,7 +160,7 @@ def run_auto_next(config: Config, dry_run: bool = False):
 
 
 def run_auto_all(config: Config, dry_run: bool = False, delay: int = 30):
-    """모든 미완료 날짜 순차 실행."""
+    """every Incomplete date sequential execution."""
     console.print()
     console.print("[bold]═══ Autopilot: Full Campaign Run ═══[/bold]")
 
@@ -179,7 +179,7 @@ def run_auto_all(config: Config, dry_run: bool = False, delay: int = 30):
             break
         count += 1
 
-        # 다음 날짜 확인
+        # next date check
         db = StateDB(config.campaign.db_path)
         next_day = _get_next_pending(db)
         db.close()
@@ -191,12 +191,12 @@ def run_auto_all(config: Config, dry_run: bool = False, delay: int = 30):
     console.print()
     console.print(f"[bold green]Autopilot complete. {count} days executed.[/bold green]")
 
-    # 최종 보고서
+    # final report
     _run_influence_report(config)
 
 
 def run_auto_daemon(config: Config, day_interval: int = 86400, monitor_interval: int = 300):
-    """데몬 모드 — 하루 간격으로 다음 날짜 실행, 그 사이 모니터링."""
+    """daemon mode — day at intervals next date execution, that between monitoring."""
     console.print()
     console.print("[bold]═══ Autopilot Daemon Mode ═══[/bold]")
     console.print(f"  Day interval: {day_interval}s ({day_interval // 3600}h)")
@@ -210,13 +210,13 @@ def run_auto_daemon(config: Config, day_interval: int = 86400, monitor_interval:
         while True:
             now = time.time()
 
-            # 날짜 실행 타이밍
+            # date execution timing
             if now - last_day_run >= day_interval:
                 has_more = run_auto_next(config)
                 last_day_run = now
                 if not has_more:
                     show_success("All days completed. Switching to monitor-only mode.")
-                    # 모니터 전용 모드
+                    # monitor exclusive mode
                     from .monitor import run_continuous_monitor
                     from .parser import parse_all_days
                     from .reddit_client import RedditClient
@@ -233,7 +233,7 @@ def run_auto_daemon(config: Config, day_interval: int = 86400, monitor_interval:
                     )
                     return
 
-            # 모니터링 사이클
+            # monitoring cycle
             _run_monitor_cycle(config)
             show_info(f"Next monitor check in {monitor_interval}s...")
             time.sleep(monitor_interval)
@@ -244,7 +244,7 @@ def run_auto_daemon(config: Config, day_interval: int = 86400, monitor_interval:
 
 
 def _run_monitor_cycle(config: Config):
-    """모니터링 1회 실행."""
+    """monitoring 1episode execution."""
     try:
         from .monitor import check_new_comments
         from .parser import parse_all_days
@@ -269,7 +269,7 @@ def _run_monitor_cycle(config: Config):
 
 
 def _run_influence_report(config: Config):
-    """영향력 보고서 생성."""
+    """influence report generation."""
     try:
         from .influence import fetch_influence_data, write_influence_report
 

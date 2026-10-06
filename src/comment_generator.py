@@ -1,8 +1,8 @@
-"""Kimi CLI 기반 댓글 자동 생성 + 검증.
+"""Kimi CLI based comment automatic generation + verification.
 
-kimi --quiet 로 댓글/제목/본문 생성.
-기존 댓글들을 읽고 맥락에 맞는 자연스러운 댓글 작성.
-작성 후 kimi가 페이지 텍스트에서 댓글 존재 여부 검증.
+kimi --quiet as comment/title/text generation.
+existing comments read in context fit natural Write a comment.
+write after kimigo page in text comment existence Whether verification.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from .campaign_config import CampaignConfig
 
 
 def _ask_kimi(prompt: str, timeout: int = 60) -> str:
-    """kimi CLI에 프롬프트를 보내고 결과만 받음."""
+    """kimi CLIto prompt send Results only Received."""
     try:
         result = subprocess.run(
             ["kimi", "--quiet"],
@@ -36,7 +36,7 @@ def _ask_kimi(prompt: str, timeout: int = 60) -> str:
 
 
 def _fallback_comment(keywords: list[str]) -> str:
-    """kimi 실패 시 간단한 폴백."""
+    """kimi failure city simple fallback."""
     fallbacks = [
         "yeah this is pretty much what i do too",
         "nice setup, been looking into something similar",
@@ -46,7 +46,7 @@ def _fallback_comment(keywords: list[str]) -> str:
     return random.choice(fallbacks)
 
 
-# 프롬프트 노출 감지 키워드
+# prompt exposure detect keyword
 _PROMPT_LEAK_PATTERNS = [
     "i understand this is",
     "i see the comment",
@@ -69,46 +69,46 @@ _PROMPT_LEAK_PATTERNS = [
 
 
 def _is_clean_comment(text: str) -> bool:
-    """댓글에 프롬프트 내용이 노출되지 않았는지 확인."""
+    """In the comments prompt the content not exposed Wasn't it check."""
     low = text.lower()
     for pattern in _PROMPT_LEAK_PATTERNS:
         if pattern in low:
             return False
-    # 너무 길면 의심 (프롬프트 반복 가능성)
+    # too If it's long doubt (prompt repeat possibility)
     if len(text) > 800:
         return False
-    # --- 구분선이 있으면 프롬프트 노출
+    # --- The dividing line If there is prompt exposure
     if "---" in text and len(text) > 200:
         return False
     return True
 
 
 def _generate_with_retry(prompt: str, max_retries: int = 3, timeout: int = 60) -> str:
-    """kimi에게 프롬프트 보내고, 결과가 깨끗한지 3번까지 검증."""
+    """kimito prompt send, the result Is it clean? 3Until verification."""
     for attempt in range(max_retries):
         result = _ask_kimi(prompt, timeout=timeout)
         if not result:
             continue
-        # 따옴표 제거
+        # quotes eliminate
         result = result.strip('"').strip("'")
-        # --- 앞뒤 잘라내기 (kimi가 가끔 --- 로 구분해서 보냄)
+        # --- back and forth cut (kimigo sometimes --- as Separately Sent)
         if "---" in result:
             parts = result.split("---")
-            # 가장 긴 파트를 댓글로 간주
+            # most long part In comments considered
             result = max(parts, key=lambda p: len(p.strip())).strip()
-        # 깨끗한지 확인
+        # Is it clean? check
         if _is_clean_comment(result):
             return result
-        # 프롬프트 노출 → 재시도
+        # prompt exposure → retry
     return ""
 
 
 def _format_existing_comments(existing_comments: list[dict] | None) -> str:
-    """기존 댓글들을 프롬프트용 텍스트로 변환."""
+    """existing comments For prompt by text conversion."""
     if not existing_comments:
         return ""
     lines = []
-    for c in existing_comments[:8]:  # 최대 8개
+    for c in existing_comments[:8]:  # maximum 8dog
         author = c.get("author", "user")
         body = (c.get("body") or c.get("text") or "")[:200]
         if body:
@@ -125,7 +125,7 @@ def generate_karma_comment(
     keywords: list[str] | None = None,
     existing_comments: list[dict] | None = None,
 ) -> str:
-    """카르마 빌딩 댓글 — kimi가 기존 댓글을 참조하여 생성."""
+    """karma building comment — kimigo existing Leave a comment by reference generation."""
     kw_str = ", ".join(keywords[:3]) if keywords else sub
     post_snippet = post_text[:1000] if post_text else ""
     comments_context = _format_existing_comments(existing_comments)
@@ -160,7 +160,7 @@ def generate_seed_comment(
     keywords: list[str] | None = None,
     existing_comments: list[dict] | None = None,
 ) -> str:
-    """씨뿌리기 댓글 — kimi가 기존 댓글 참조 + 제품 자연스럽게 언급."""
+    """sow seeds comment — kimigo existing comment reference + product naturally mention."""
     kw_str = ", ".join(keywords[:3]) if keywords else "tools"
     post_snippet = post_text[:1000] if post_text else ""
     comments_context = _format_existing_comments(existing_comments)
@@ -189,12 +189,12 @@ Post content:
 
 
 def verify_comment_posted(page_text: str, my_comment: str, my_username: str = "") -> dict:
-    """kimi가 페이지 텍스트에서 댓글이 실제로 게시되었는지 검증.
+    """kimigo page in text Comment actually Has it been posted? verification.
 
     Returns:
         {"verified": True/False, "reason": "..."}
     """
-    # 댓글 앞부분 (핵심 단어)
+    # comment front part (core word)
     comment_snippet = my_comment[:150]
     page_snippet = page_text[:5000] if page_text else ""
 
@@ -216,7 +216,7 @@ Rules:
 
     result = _ask_kimi(prompt, timeout=20)
     if not result:
-        # kimi 실패 시 단순 텍스트 매칭 폴백
+        # kimi failure city simple text matching fallback
         words = my_comment.split()[:5]
         key_phrase = " ".join(words)
         found = key_phrase.lower() in page_text.lower() if page_text else False
@@ -232,7 +232,7 @@ Rules:
 
 
 def generate_post_title(config: CampaignConfig, sub: str, hint: str = "") -> str:
-    """포스트 제목 — kimi가 생성."""
+    """post title — kimigo generation."""
     prompt = f"""Write a Reddit post title for r/{sub}.
 
 Product: {config.product_name}
@@ -253,7 +253,7 @@ Rules:
 
 
 def generate_post_body(config: CampaignConfig, sub: str, hint: str = "") -> str:
-    """포스트 본문 — kimi가 생성."""
+    """post text — kimigo generation."""
     prompt = f"""Write a Reddit post body for r/{sub}.
 
 Product: {config.product_name}
@@ -284,7 +284,7 @@ Would love to hear your feedback!"""
 
 
 def estimate_comment_quality(comment: str) -> dict:
-    """댓글 품질 추정."""
+    """comment quality calculation."""
     words = comment.split()
     return {
         "word_count": len(words),

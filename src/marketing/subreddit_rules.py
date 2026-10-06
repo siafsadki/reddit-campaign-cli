@@ -1,4 +1,4 @@
-"""서브레딧별 규칙 관리."""
+"""By subreddit rule management."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ class SubredditProfile:
     name: str
     min_karma: int = 0
     min_account_age_days: int = 0
-    self_promo_ratio: float = 0.1   # 10:1 규칙 (홍보 1 : 기여 10)
+    self_promo_ratio: float = 0.1   # 10:1 rule (promotion 1 : contribution 10)
     self_promo_allowed: bool = True
     max_posts_per_week: int = 2
     requires_flair: bool = False
@@ -19,80 +19,80 @@ class SubredditProfile:
     notes: str = ""
 
 
-# 캠페인 대상 서브레딧 프로필
+# campaign Target subreddit profile
 PROFILES: dict[str, SubredditProfile] = {
     "commandline": SubredditProfile(
         name="commandline",
         min_karma=10,
         self_promo_ratio=0.1,
-        notes="터미널 도구 환영. GUI 앱을 'terminal'로 부르면 반발.",
+        notes="terminal equipment illusion. GUI app 'terminal'as When you call repulsion.",
     ),
     "programming": SubredditProfile(
         name="programming",
         min_karma=50,
         min_account_age_days=7,
         self_promo_ratio=0.1,
-        notes="10:1 규칙 엄격. 자기 프로젝트 홍보는 기여 10개 후 1개.",
+        notes="10:1 rule severity. self project Promotion is contribution 10dog after 1dog.",
     ),
     "rust": SubredditProfile(
         name="rust",
         min_karma=20,
         self_promo_ratio=0.2,
-        notes="Rust 코드/크레이트 관련만. 일반 앱 홍보 부정적.",
+        notes="Rust cord/crate related only. common app promotion negative.",
     ),
     "ClaudeAI": SubredditProfile(
         name="ClaudeAI",
         min_karma=5,
         self_promo_ratio=0.3,
-        notes="AI 통합 사례 환영. 사용 경험 중심.",
+        notes="AI integration example illusion. use experience center.",
     ),
     "webdev": SubredditProfile(
         name="webdev",
         min_karma=20,
         self_promo_ratio=0.1,
-        notes="Show-off Saturday 활용. 평일 셀프 프로모 주의.",
+        notes="Show-off Saturday conjugation. weekdays self promo caution.",
     ),
     "SideProject": SubredditProfile(
         name="SideProject",
         min_karma=5,
         self_promo_allowed=True,
         self_promo_ratio=0.5,
-        notes="사이드프로젝트 공유 전용. 셀프프로모 OK.",
+        notes="side project share exclusive. self promo OK.",
     ),
     "macapps": SubredditProfile(
         name="macapps",
         min_karma=10,
         allowed_types=["text", "link"],
-        notes="macOS 앱 전용. 가격/무료 명시 필요.",
+        notes="macOS app exclusive. price/free express necessary.",
     ),
     "tauri": SubredditProfile(
         name="tauri",
         min_karma=5,
         self_promo_ratio=0.3,
-        notes="Tauri 프레임워크 커뮤니티. 기술 디테일 중요.",
+        notes="Tauri framework community. technology detail importance.",
     ),
     "neovim": SubredditProfile(
         name="neovim",
         min_karma=10,
-        notes="터미널 순수주의자 많음. Electron/Tauri에 회의적.",
+        notes="terminal purist plenty. Electron/Taurito skeptical.",
     ),
     "devops": SubredditProfile(
         name="devops",
         min_karma=20,
         self_promo_ratio=0.1,
-        notes="실무 도구 중심. 가벼운 프로젝트 반감.",
+        notes="practice equipment center. light project antipathy.",
     ),
     "coolgithubprojects": SubredditProfile(
         name="coolgithubprojects",
         min_karma=5,
         self_promo_allowed=True,
         self_promo_ratio=1.0,
-        notes="GitHub 프로젝트 공유 전용. 링크 필수.",
+        notes="GitHub project share exclusive. link essential.",
     ),
     "selfhosted": SubredditProfile(
         name="selfhosted",
         min_karma=10,
-        notes="셀프호스팅 가능해야. Docker/서버 배포 관련.",
+        notes="self hosting It should be possible. Docker/server distribution related.",
     ),
 }
 
@@ -105,7 +105,7 @@ class RuleCheckResult:
 
 
 def check_rules(subreddit: str, action_type: str, is_self_promo: bool = False) -> RuleCheckResult:
-    """서브레딧 규칙 체크."""
+    """subreddit rule check."""
     sub = subreddit.replace("r/", "").lower()
     profile = PROFILES.get(sub)
 
@@ -113,31 +113,31 @@ def check_rules(subreddit: str, action_type: str, is_self_promo: bool = False) -
     blocks = []
 
     if not profile:
-        warnings.append(f"r/{sub}: 프로필 미등록 — 기본 규칙 적용")
+        warnings.append(f"r/{sub}: profile Not registered — basic rule apply")
         return RuleCheckResult(allowed=True, warnings=warnings, blocks=blocks)
 
-    # 셀프 프로모 체크
+    # self promo check
     if is_self_promo and not profile.self_promo_allowed:
-        blocks.append(f"r/{sub}: 자기 홍보 금지 서브레딧")
+        blocks.append(f"r/{sub}: self promotion prohibition subreddit")
 
     if is_self_promo and profile.self_promo_ratio < 0.2:
         warnings.append(
-            f"r/{sub}: 10:1 규칙 — 홍보 전 기여 댓글 {int(1/profile.self_promo_ratio)}개 필요"
+            f"r/{sub}: 10:1 rule — promotion jeon contribution comment {int(1/profile.self_promo_ratio)}dog necessary"
         )
 
-    # 포스트 타입
+    # post type
     if action_type == "post" and "text" not in profile.allowed_types:
-        blocks.append(f"r/{sub}: 텍스트 포스트 미허용")
+        blocks.append(f"r/{sub}: text post not allowed")
 
-    # 참고사항
+    # Note
     if profile.notes:
-        warnings.append(f"r/{sub} 참고: {profile.notes}")
+        warnings.append(f"r/{sub} reference: {profile.notes}")
 
     allowed = len(blocks) == 0
     return RuleCheckResult(allowed=allowed, warnings=warnings, blocks=blocks)
 
 
 def get_profile(subreddit: str) -> SubredditProfile | None:
-    """서브레딧 프로필 조회."""
+    """subreddit profile check."""
     sub = subreddit.replace("r/", "").lower()
     return PROFILES.get(sub)

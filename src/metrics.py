@@ -1,4 +1,4 @@
-"""메트릭 수집/리포트."""
+"""metric collection/report."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from .state import StateDB
 
 
 def collect_metrics(client: RedditClient, db: StateDB) -> list[dict]:
-    """모든 submission의 최신 메트릭 수집."""
+    """every submissionof recent metric collection."""
     submissions = db.get_submissions()
     collected = []
 

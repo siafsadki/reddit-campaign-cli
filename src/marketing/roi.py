@@ -1,4 +1,4 @@
-"""ROI 분석 — GitHub 스타/다운로드 vs Reddit 활동 상관관계."""
+"""ROI analyze — GitHub star/download vs Reddit activity correlation."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from urllib.request import urlopen, Request
 from ..state import StateDB
 
 def _get_github_repo() -> str:
-    """campaign.toml에서 GitHub repo 경로 추출."""
+    """campaign.tomlat GitHub repo channel extraction."""
     try:
         from ..campaign_config import load_campaign, campaign_exists
         if campaign_exists():
@@ -40,15 +40,15 @@ class ROISummary:
     total_reddit_comments: int
     github_stars: int
     github_downloads: int
-    stars_delta: int       # 캠페인 기간 변화
+    stars_delta: int       # campaign period change
     downloads_delta: int
-    best_day: str | None   # 가장 효과적이었던 날
-    cost_per_star: float   # 포스트 수 / 스타 증가
+    best_day: str | None   # most effective me
+    cost_per_star: float   # post number / star increase
     snapshots: list[dict]
 
 
 def fetch_github_stats() -> GitHubSnapshot | None:
-    """GitHub API에서 현재 통계 가져오기 (인증 불필요)."""
+    """GitHub APIat today statistics import (certification otiosity)."""
     repo = _get_github_repo()
     if not repo:
         return None
@@ -65,7 +65,7 @@ def fetch_github_stats() -> GitHubSnapshot | None:
         forks = data.get("forks_count", 0)
         watchers = data.get("subscribers_count", 0)
 
-        # 릴리즈 다운로드 수
+        # release download number
         total_downloads = 0
         try:
             releases_req = Request(
@@ -92,7 +92,7 @@ def fetch_github_stats() -> GitHubSnapshot | None:
 
 
 def save_snapshot(db: StateDB, snapshot: GitHubSnapshot):
-    """스냅샷 DB 저장."""
+    """snapshot DB save."""
     db.conn.execute(
         "INSERT INTO github_metrics (stars, forks, watchers, total_downloads, recorded_at) "
         "VALUES (?, ?, ?, ?, ?)",
@@ -103,8 +103,8 @@ def save_snapshot(db: StateDB, snapshot: GitHubSnapshot):
 
 
 def get_roi_summary(db: StateDB) -> ROISummary:
-    """ROI 종합 분석."""
-    # Reddit 총 성과
+    """ROI synthesis analyze."""
+    # Reddit gun result
     reddit_scores = db.conn.execute(
         "SELECT COALESCE(SUM(upvotes), 0) as total FROM metrics"
     ).fetchone()["total"]
@@ -112,7 +112,7 @@ def get_roi_summary(db: StateDB) -> ROISummary:
         "SELECT COALESCE(SUM(comment_count), 0) as total FROM metrics"
     ).fetchone()["total"]
 
-    # GitHub 스냅샷
+    # GitHub snapshot
     snapshots = db.conn.execute(
         "SELECT * FROM github_metrics ORDER BY recorded_at"
     ).fetchall()
@@ -131,7 +131,7 @@ def get_roi_summary(db: StateDB) -> ROISummary:
         stars_delta = github_stars - first.get("stars", 0)
         downloads_delta = github_downloads - first.get("total_downloads", 0)
 
-    # 포스트 수
+    # post number
     post_count = db.conn.execute(
         "SELECT COUNT(*) as cnt FROM submissions"
     ).fetchone()["cnt"]

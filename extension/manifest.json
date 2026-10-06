@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "레딧브라우저",
+  "name": "Reddit Browser",
   "version": "1.1.0",
-  "description": "Reddit 전문 브라우저 자동화 — 카르마 빌드, 시딩, 캠페인 자동 실행",
+  "description": "Reddit specialty browser automation — karma build, Seeding, campaign automatic execution",
   "permissions": [
     "activeTab",
     "tabs",

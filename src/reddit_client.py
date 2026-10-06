@@ -1,4 +1,4 @@
-"""PRAW 래퍼 — Reddit API 호출."""
+"""PRAW rapper — Reddit API call."""
 
 from __future__ import annotations
 
@@ -23,35 +23,35 @@ class RedditClient:
         self.delay = config.settings.comment_delay
 
     def verify_auth(self) -> str:
-        """인증 확인, 사용자명 반환."""
+        """certification check, username return."""
         return str(self.reddit.user.me())
 
     def submit_post(self, subreddit: str, title: str, body: str) -> Submission:
-        """서브레딧에 텍스트 포스트 제출."""
+        """On the subreddit text post submit."""
         sub = self.reddit.subreddit(subreddit.removeprefix("r/"))
         submission = sub.submit(title=title, selftext=body)
         return submission
 
     def post_comment(self, submission_id: str, body: str) -> praw.models.Comment:
-        """포스트에 댓글 작성."""
+        """in the post Write a comment."""
         submission = self.reddit.submission(id=submission_id)
         comment = submission.reply(body)
         time.sleep(self.delay)
         return comment
 
     def reply_to_comment(self, comment_id: str, body: str) -> praw.models.Comment:
-        """댓글에 답글 작성."""
+        """In the comments Reply write."""
         comment = self.reddit.comment(id=comment_id)
         reply = comment.reply(body)
         time.sleep(self.delay)
         return reply
 
     def get_submission(self, submission_id: str) -> Submission:
-        """submission 조회."""
+        """submission check."""
         return self.reddit.submission(id=submission_id)
 
     def get_new_comments(self, submission_id: str) -> list[praw.models.Comment]:
-        """포스트의 모든 댓글 가져오기."""
+        """of the post every comment import."""
         submission = self.reddit.submission(id=submission_id)
         submission.comments.replace_more(limit=0)
         return list(submission.comments.list())
@@ -59,17 +59,17 @@ class RedditClient:
     def search_subreddit(
         self, subreddit: str, query: str, limit: int = 10
     ) -> list[Submission]:
-        """서브레딧에서 관련 글 검색."""
+        """On the subreddit Search related posts."""
         sub = self.reddit.subreddit(subreddit.removeprefix("r/"))
         return list(sub.search(query, sort="new", time_filter="week", limit=limit))
 
     def get_hot_posts(self, subreddit: str, limit: int = 10) -> list[Submission]:
-        """서브레딧 인기 글 조회."""
+        """subreddit popularity writing check."""
         sub = self.reddit.subreddit(subreddit.removeprefix("r/"))
         return list(sub.hot(limit=limit))
 
     def get_submission_metrics(self, submission_id: str) -> dict:
-        """submission 메트릭 조회."""
+        """submission metric check."""
         s = self.reddit.submission(id=submission_id)
         return {
             "upvotes": s.score,

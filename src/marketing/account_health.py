@@ -1,4 +1,4 @@
-"""계정 건강도 관리."""
+"""account health management."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from ..state import StateDB
 
 
 class RiskLevel(Enum):
-    GREEN = "green"     # 정상
-    YELLOW = "yellow"   # 주의
-    RED = "red"         # 위험 — 활동 중단
+    GREEN = "green"     # normal
+    YELLOW = "yellow"   # caution
+    RED = "red"         # danger — activity interruption
 
 
 @dataclass
@@ -29,7 +29,7 @@ class HealthReport:
     can_proceed: bool
 
 
-# 위험 기준
+# danger standard
 RED_THRESHOLDS = {
     "posts_per_day": 3,
     "comments_per_day": 12,
@@ -47,22 +47,22 @@ POST_COOLDOWN_HOURS = 4
 
 
 def check_health(db: StateDB) -> HealthReport:
-    """계정 건강 상태 종합 체크."""
+    """account health situation synthesis check."""
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     week_ago = (now - timedelta(days=7)).isoformat()
 
     warnings = []
 
-    # 오늘 활동
+    # today activity
     today_posts = _count_actions(db, "post", today_only=True)
     today_comments = _count_actions(db, "comment", today_only=True) + _count_actions(db, "seeding", today_only=True)
 
-    # 이번 주 활동
+    # this time main activity
     week_posts = _count_actions_since(db, "post", week_ago)
     week_comments = _count_actions_since(db, "comment", week_ago) + _count_actions_since(db, "seeding", week_ago)
 
-    # 마지막 포스트 시간
+    # last post hour
     last_post = _last_action_time(db, "post")
     cooldown_sec = 0
     if last_post:
@@ -70,39 +70,39 @@ def check_health(db: StateDB) -> HealthReport:
         remaining = POST_COOLDOWN_HOURS * 3600 - elapsed
         if remaining > 0:
             cooldown_sec = int(remaining)
-            warnings.append(f"포스트 쿨다운: {int(remaining/60)}분 남음")
+            warnings.append(f"post cooldown: {int(remaining/60)}minute Remaining")
 
-    # 위험도 판단
+    # risk judgment
     risk = RiskLevel.GREEN
 
-    # RED 체크
+    # RED check
     if today_posts >= RED_THRESHOLDS["posts_per_day"]:
         risk = RiskLevel.RED
-        warnings.append(f"일일 포스트 {today_posts}개 — 한도 초과!")
+        warnings.append(f"daily post {today_posts}dog — limit over!")
     if today_comments >= RED_THRESHOLDS["comments_per_day"]:
         risk = RiskLevel.RED
-        warnings.append(f"일일 댓글 {today_comments}개 — 한도 초과!")
+        warnings.append(f"daily comment {today_comments}dog — limit over!")
     if week_posts >= RED_THRESHOLDS["posts_per_week"]:
         risk = RiskLevel.RED
-        warnings.append(f"주간 포스트 {week_posts}개 — 스팸 위험!")
+        warnings.append(f"weekly post {week_posts}dog — spam danger!")
 
-    # YELLOW 체크 (RED가 아닐 때만)
+    # YELLOW check (REDgo Not only)
     if risk == RiskLevel.GREEN:
         if today_posts >= YELLOW_THRESHOLDS["posts_per_day"]:
             risk = RiskLevel.YELLOW
-            warnings.append(f"일일 포스트 {today_posts}개 — 주의")
+            warnings.append(f"daily post {today_posts}dog — caution")
         if today_comments >= YELLOW_THRESHOLDS["comments_per_day"]:
             risk = RiskLevel.YELLOW
-            warnings.append(f"일일 댓글 {today_comments}개 — 주의")
+            warnings.append(f"daily comment {today_comments}dog — caution")
         if week_posts >= YELLOW_THRESHOLDS["posts_per_week"]:
             risk = RiskLevel.YELLOW
-            warnings.append(f"주간 포스트 {week_posts}개 — 줄여야 함")
+            warnings.append(f"weekly post {week_posts}dog — reduce it box")
 
     can_proceed = risk != RiskLevel.RED
 
     return HealthReport(
         risk_level=risk,
-        karma=None,  # 브라우저로 확인 필요
+        karma=None,  # by browser check necessary
         posts_today=today_posts,
         posts_this_week=week_posts,
         comments_today=today_comments,

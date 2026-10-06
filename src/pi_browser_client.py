@@ -1,8 +1,8 @@
 """
-레딧브라우저 Python Client
-Chrome Extension(레딧브라우저)과 직접 WebSocket 통신
-Python이 WebSocket 서버(9876)를 열고, Extension이 연결하면 명령 전송
-별도 브라우저를 띄우지 않음 - 사용자의 기존 Chrome 사용
+Reddit Browser Python Client
+Chrome Extension(Reddit Browser)class directly WebSocket communication
+Pythonthis WebSocket server(9876)cast open, Extensionthis When connected command forwarding
+Separately your browser It floats No - user's existing Chrome use
 """
 import json
 import time
@@ -18,7 +18,7 @@ EXT_WS_PORT = 9877
 
 
 class PiBrowserClient:
-    """Chrome Extension 직접 통신 - Python WebSocket 서버"""
+    """Chrome Extension directly communication - Python WebSocket server"""
 
     def __init__(self, port: int = EXT_WS_PORT, **kwargs):
         self.port = port
@@ -33,11 +33,11 @@ class PiBrowserClient:
         self.process = None
 
     def start_server(self):
-        """WebSocket 서버 시작 - Extension 연결 대기"""
+        """WebSocket server start - Extension connection status"""
         if self._running:
             return
 
-        # 포트 사용 중이면 정리
+        # port use If you are in progress organize
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
@@ -59,10 +59,10 @@ class PiBrowserClient:
         self._running = True
         self._server_thread = threading.Thread(target=self._run_server, daemon=True)
         self._server_thread.start()
-        print(f"[레딧브라우저] WebSocket 서버 시작 (포트 {self.port}) - Extension 연결 대기...", flush=True)
+        print(f"[Reddit Browser] WebSocket server start (port {self.port}) - Extension connection status...", flush=True)
 
     def _run_server(self):
-        """비동기 WebSocket 서버 실행"""
+        """asynchronous WebSocket server execution"""
         import websockets.server
 
         self._loop = asyncio.new_event_loop()
@@ -71,7 +71,7 @@ class PiBrowserClient:
         async def handler(websocket):
             self._ext_ws = websocket
             self._connected = True
-            print(f"[레딧브라우저] Extension 연결됨!", flush=True)
+            print(f"[Reddit Browser] Extension connected!", flush=True)
             try:
                 async for message in websocket:
                     try:
@@ -84,14 +84,14 @@ class PiBrowserClient:
                                 self._results[msg_id] = data.get("result", {})
                             self._pending[msg_id].set()
                     except Exception as e:
-                        print(f"[레딧브라우저] 메시지 파싱 에러: {e}", flush=True)
+                        print(f"[Reddit Browser] message farthing error: {e}", flush=True)
             except Exception:
                 pass
             finally:
                 if self._ext_ws == websocket:
                     self._ext_ws = None
                     self._connected = False
-                    print("[레딧브라우저] Extension 연결 끊김", flush=True)
+                    print("[Reddit Browser] Extension connection disconnected", flush=True)
 
         async def serve():
             async with websockets.server.serve(handler, "0.0.0.0", self.port):
@@ -104,13 +104,13 @@ class PiBrowserClient:
             pass
 
     def connect(self, retries: int = 3):
-        """Extension 연결 대기"""
+        """Extension connection status"""
         for _ in range(retries * 5):
             if self._connected:
                 return
             time.sleep(1)
         if not self._connected:
-            print("[레딧브라우저] Extension 연결 대기 시간 초과. Chrome에서 레딧브라우저 확장 확인.", flush=True)
+            print("[Reddit Browser] Extension connection status hour over. Chromeat Reddit Browser expansion check.", flush=True)
 
     def is_alive(self) -> bool:
         return self._connected and self._ext_ws is not None
@@ -123,13 +123,13 @@ class PiBrowserClient:
             self.connect()
 
     # ============================================================
-    # Extension 명령 전송
+    # Extension command forwarding
     # ============================================================
 
     def _send_ext_command(self, command: str, params: dict = None, timeout: int = 30, retries: int = 3) -> dict:
-        """Extension에 명령 보내고 응답 대기 (재시도 포함)"""
+        """Extensionto command send response atmosphere (retry include)"""
         for attempt in range(retries):
-            # 연결 대기
+            # connection status
             if not self._wait_for_connection(timeout=10):
                 continue
 
@@ -148,7 +148,7 @@ class PiBrowserClient:
                 if attempt < retries - 1:
                     time.sleep(2)
                     continue
-                return {"error": f"전송 실패: {e}"}
+                return {"error": f"forwarding failure: {e}"}
 
             event.wait(timeout=timeout)
 
@@ -158,11 +158,11 @@ class PiBrowserClient:
             if result is not None:
                 return result
 
-            # 타임아웃 - 재시도
+            # time out - retry
             if attempt < retries - 1:
                 time.sleep(2)
 
-        return {"error": "타임아웃"}
+        return {"error": "time out"}
 
     def ext_navigate(self, url: str) -> dict:
         return self._send_ext_command("navigate", {"url": url})
@@ -185,11 +185,11 @@ class PiBrowserClient:
         return self._send_ext_command("scroll", {"direction": direction, "amount": amount})
 
     def ext_click_coords(self, x: int, y: int) -> dict:
-        """CDP 기반 좌표 클릭 — Shadow DOM 관통."""
+        """CDP based coordinate click — Shadow DOM penetration."""
         return self._send_ext_command("clickCoords", {"x": x, "y": y}, timeout=10)
 
     def ext_type_text(self, text: str) -> dict:
-        """CDP 기반 실제 타이핑 — Shadow DOM 관통."""
+        """CDP based actual typing — Shadow DOM penetration."""
         return self._send_ext_command("typeText", {"text": text}, timeout=30)
 
     def ext_evaluate(self, script: str) -> Any:
@@ -197,7 +197,7 @@ class PiBrowserClient:
         return result.get("result") if isinstance(result, dict) else None
 
     def ext_get_links(self, pattern: str = None, limit: int = 20) -> list:
-        """페이지 링크 수집 (eval 불필요)."""
+        """Collect page links without evaluation."""
         params = {"limit": limit}
         if pattern:
             params["pattern"] = pattern
@@ -205,48 +205,48 @@ class PiBrowserClient:
         return result.get("links", []) if isinstance(result, dict) else []
 
     def ext_get_page_info(self) -> dict:
-        """페이지 기본 정보 (title, url, domain)."""
+        """page basic information (title, url, domain)."""
         result = self._send_ext_command("getPageInfo")
         return result if isinstance(result, dict) else {}
 
     # ============================================================
-    # Reddit 전용 커맨드
+    # Reddit exclusive command
     # ============================================================
 
     def reddit_comment(self, body: str) -> dict:
-        """Reddit 댓글 작성 (트리거 클릭 → 입력 → 제출)."""
+        """Reddit Write a comment (trigger click → input → submit)."""
         result = self._send_ext_command("redditComment", {"body": body}, timeout=30)
         return result if isinstance(result, dict) else {"success": False}
 
     def reddit_get_posts(self, limit: int = 10) -> list:
-        """서브레딧 포스트 목록 (shreddit-post 파싱)."""
+        """subreddit post inventory (shreddit-post farthing)."""
         result = self._send_ext_command("redditGetPosts", {"limit": limit})
         return result.get("posts", []) if isinstance(result, dict) else []
 
     def reddit_get_post_detail(self) -> dict:
-        """현재 포스트 상세 (제목, 본문, 점수, 작성자)."""
+        """today post particular (title, text, score, Author)."""
         result = self._send_ext_command("redditGetPostDetail")
         return result if isinstance(result, dict) else {}
 
     def reddit_get_comments(self, limit: int = 30) -> list:
-        """현재 포스트 댓글 목록."""
+        """today post comment inventory."""
         result = self._send_ext_command("redditGetComments", {"limit": limit})
         return result.get("comments", []) if isinstance(result, dict) else []
 
     def reddit_check_login(self) -> dict:
-        """Reddit 로그인 상태."""
+        """Reddit login status."""
         result = self._send_ext_command("redditCheckLogin")
         return result if isinstance(result, dict) else {"loggedIn": False}
 
     def reddit_upvote(self, selector: str = None) -> dict:
-        """Reddit 업보트."""
+        """Reddit Upvote."""
         params = {"selector": selector} if selector else {}
         result = self._send_ext_command("redditUpvote", params)
         return result if isinstance(result, dict) else {"success": False}
 
     def reddit_search(self, query: str, subreddit: str = None,
                       sort: str = "relevance", limit: int = 10) -> list:
-        """Reddit 검색 → 포스트 목록."""
+        """Reddit search → post inventory."""
         params = {"query": query, "sort": sort, "limit": limit}
         if subreddit:
             params["subreddit"] = subreddit
@@ -255,7 +255,7 @@ class PiBrowserClient:
 
     def reddit_submit_post(self, subreddit: str, title: str, body: str,
                            auto_submit: bool = False) -> dict:
-        """Reddit 포스트 작성 (CDP 기반)."""
+        """Reddit post write (CDP based)."""
         result = self._send_ext_command("redditSubmitPost", {
             "subreddit": subreddit,
             "title": title,
@@ -265,39 +265,39 @@ class PiBrowserClient:
         return result if isinstance(result, dict) else {"success": False}
 
     def reddit_reply_to_comment(self, thing_id: str, body: str) -> dict:
-        """Reddit 댓글에 답글."""
+        """Reddit In the comments Reply."""
         result = self._send_ext_command("redditReplyToComment",
                                         {"thingId": thing_id, "body": body}, timeout=15)
         return result if isinstance(result, dict) else {"success": False}
 
     def reddit_get_user_info(self) -> dict:
-        """현재 로그인 사용자 정보."""
+        """today log in user information."""
         result = self._send_ext_command("redditGetUserInfo")
         return result if isinstance(result, dict) else {"loggedIn": False}
 
     def reddit_navigate_sub(self, subreddit: str, sort: str = "hot") -> dict:
-        """서브레딧으로 이동 + 정보 수집."""
+        """To subreddit movement + information collection."""
         result = self._send_ext_command("redditNavigateSub",
                                         {"subreddit": subreddit, "sort": sort}, timeout=20)
         return result if isinstance(result, dict) else {"success": False}
 
     # ============================================================
-    # page-agent 스타일 DOM 트리 + 인덱스 기반 조작
+    # page-agent style DOM tree + index based operation
     # ============================================================
 
     def get_dom_tree(self, max_depth: int = 5, max_nodes: int = 200) -> dict:
-        """page-agent 방식 DOM 트리 추출 (인덱스 매핑)."""
+        """page-agent method DOM tree extraction (index mapping)."""
         result = self._send_ext_command("getDomTree",
                                         {"maxDepth": max_depth, "maxNodes": max_nodes})
         return result if isinstance(result, dict) else {}
 
     def click_by_index(self, index: int) -> dict:
-        """DOM 트리 인덱스로 클릭."""
+        """DOM tree by index click."""
         result = self._send_ext_command("clickByIndex", {"index": index})
         return result if isinstance(result, dict) else {"success": False}
 
     def fill_by_index(self, index: int, value: str) -> dict:
-        """DOM 트리 인덱스로 입력."""
+        """DOM tree by index input."""
         result = self._send_ext_command("fillByIndex", {"index": index, "value": value})
         return result if isinstance(result, dict) else {"success": False}
 
@@ -305,7 +305,7 @@ class PiBrowserClient:
         return self._send_ext_command("screenshot")
 
     # ============================================================
-    # 고수준 크롤링 API
+    # high level crawling API
     # ============================================================
 
     def scrape_page(self, url: str) -> Dict:
@@ -318,7 +318,7 @@ class PiBrowserClient:
         return {"status": "ok", "result": text[:5000]}
 
     def _wait_for_connection(self, timeout=10):
-        """Extension 재연결 대기"""
+        """Extension reconnect atmosphere"""
         for _ in range(timeout * 2):
             if self.is_alive():
                 return True
@@ -344,7 +344,7 @@ class PiBrowserClient:
         text = self.ext_get_text()
         return {"status": "ok", "title": title, "content": (text or "")[:10000], "images": []}
 
-    # 기존 호환
+    # existing compatible
     def navigate(self, url: str) -> Dict:
         return self.ext_navigate(url)
 
@@ -355,7 +355,7 @@ class PiBrowserClient:
         self._running = False
         self._connected = False
         self._ext_ws = None
-        print("[레딧브라우저] 종료됨", flush=True)
+        print("[Reddit Browser] Terminated", flush=True)
 
 
 _client: Optional[PiBrowserClient] = None

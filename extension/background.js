@@ -1,4 +1,4 @@
-// 레딧브라우저 Extension - Background Service Worker
+// Reddit Browser Extension - Background Service Worker
 let ws = null;
 let connectedTabId = null;
 let isDebugging = false;
@@ -71,47 +71,47 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
 chrome.debugger.onDetach.addListener((source, reason) => {
   if (!debugTabId) return;
   if (!source || source.tabId !== debugTabId) return;
-  console.log("[레딧] Debugger detached:", reason);
+  console.log("[reddit] Debugger detached:", reason);
   isDebugging = false;
   debugTabId = null;
 });
 
-// 서비스 워커 활성 유지를 위한 알람
+// service walker active maintenance for alarm
 chrome.alarms.create("keepAlive", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "keepAlive") {
-    console.log("[레딧] Keep alive ping");
-    // WebSocket 연결 확인
+    console.log("[reddit] Keep alive ping");
+    // WebSocket connection check
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connect();
     }
   }
 });
 
-// WebSocket 서버에 연결
+// WebSocket to the server connection
 function connect() {
   if (ws && ws.readyState === WebSocket.OPEN) return;
 
-  console.log("[레딧] WebSocket 연결 시도...");
+  console.log("[reddit] Attempting WebSocket connection...");
   // Pin to IPv4 to avoid localhost IPv6 resolution issues.
   ws = new WebSocket("ws://127.0.0.1:9877");
 
   ws.onopen = () => {
-    console.log("[레딧] WebSocket 연결됨");
+    console.log("[reddit] WebSocket connected");
     chrome.action.setBadgeText({ text: "ON" });
     chrome.action.setBadgeBackgroundColor({ color: "#4CAF50" });
   };
 
   ws.onclose = () => {
-    console.log("[레딧] WebSocket 연결 끊김");
+    console.log("[reddit] WebSocket connection disconnected");
     chrome.action.setBadgeText({ text: "" });
     ws = null;
-    // 5초 후 재연결 시도
+    // 5candle after reconnect trial
     setTimeout(connect, 5000);
   };
 
   ws.onerror = (error) => {
-    console.log("[레딧] WebSocket 에러:", error);
+    console.log("[reddit] WebSocket error:", error);
   };
 
   ws.onmessage = async (event) => {
@@ -119,12 +119,12 @@ function connect() {
     try {
       const message = JSON.parse(event.data);
       msgId = message.id;
-      console.log("[레딧] 명령 수신:", message.command, message.params);
+      console.log("[reddit] command reception:", message.command, message.params);
       const result = await handleCommand(message);
-      console.log("[레딧] 명령 완료:", message.command);
+      console.log("[reddit] command complete:", message.command);
       ws.send(JSON.stringify({ id: msgId, result }));
     } catch (error) {
-      console.error("[레딧] 명령 처리 에러:", error.message);
+      console.error("[reddit] command treatment error:", error.message);
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ id: msgId, error: error.message }));
       }
@@ -132,7 +132,7 @@ function connect() {
   };
 }
 
-// 명령 처리
+// command treatment
 async function handleCommand(message) {
   const { command, params } = message;
 
@@ -258,7 +258,7 @@ async function handleCommand(message) {
   }
 }
 
-// 탭 목록 가져오기
+// tab inventory import
 async function getTabs() {
   const tabs = await chrome.tabs.query({});
   return tabs.map((tab) => ({
@@ -269,41 +269,41 @@ async function getTabs() {
   }));
 }
 
-// 탭 선택
+// tab select
 async function selectTab(tabId) {
   connectedTabId = tabId;
   await chrome.tabs.update(tabId, { active: true });
   return { success: true, tabId };
 }
 
-// 페이지 이동
+// page movement
 async function navigate(url) {
   if (!connectedTabId) {
-    // 새 탭 생성
+    // bird tab generation
     const tab = await chrome.tabs.create({ url });
     connectedTabId = tab.id;
   } else {
     await chrome.tabs.update(connectedTabId, { url });
   }
 
-  // 페이지 로드 대기
+  // page load status
   await waitForPageLoad();
 
   const tab = await chrome.tabs.get(connectedTabId);
   return { success: true, url: tab.url, title: tab.title };
 }
 
-// 페이지 로드 대기
+// page load status
 function waitForPageLoad() {
   return new Promise((resolve) => {
     const listener = (tabId, info) => {
       if (tabId === connectedTabId && info.status === "complete") {
         chrome.tabs.onUpdated.removeListener(listener);
-        setTimeout(resolve, 500); // 추가 대기
+        setTimeout(resolve, 500); // addition atmosphere
       }
     };
     chrome.tabs.onUpdated.addListener(listener);
-    // 타임아웃
+    // time out
     setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
       resolve();
@@ -311,7 +311,7 @@ function waitForPageLoad() {
   });
 }
 
-// 스크린샷
+// screenshot
 async function takeScreenshot() {
   await getActiveTabId();
 
@@ -322,7 +322,7 @@ async function takeScreenshot() {
   return { image: dataUrl };
 }
 
-// 현재 활성 탭 ID 가져오기 (Reddit 탭 우선)
+// today active tab ID import (Reddit tab first of all)
 async function getActiveTabId() {
   if (connectedTabId) {
     try {
@@ -333,7 +333,7 @@ async function getActiveTabId() {
     } catch {}
   }
 
-  // Reddit 탭 우선 검색
+  // Reddit tab first of all search
   const allTabs = await chrome.tabs.query({});
   const redditTab = allTabs.find(t => t.url && t.url.includes("reddit.com") && t.active);
   if (redditTab) {
@@ -341,7 +341,7 @@ async function getActiveTabId() {
     return redditTab.id;
   }
 
-  // 활성 탭
+  // active tab
   const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
   for (const tab of activeTabs) {
     if (tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("chrome-extension://")) {
@@ -350,14 +350,14 @@ async function getActiveTabId() {
     }
   }
 
-  // Reddit 탭 (비활성이라도)
+  // Reddit tab (Even if it's inactive)
   const anyReddit = allTabs.find(t => t.url && t.url.includes("reddit.com"));
   if (anyReddit) {
     connectedTabId = anyReddit.id;
     return anyReddit.id;
   }
 
-  // 아무 접근 가능한 탭
+  // any access possible tab
   for (const tab of allTabs) {
     if (tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("chrome-extension://")) {
       connectedTabId = tab.id;
@@ -368,7 +368,7 @@ async function getActiveTabId() {
   throw new Error("No accessible tab found");
 }
 
-// 페이지 스냅샷 (요소 정보)
+// page snapshot (element information)
 async function getSnapshot() {
   const tabId = await getActiveTabId();
 
@@ -391,7 +391,7 @@ async function getSnapshot() {
         '[tabindex]',
       ];
 
-      // Shadow DOM 관통 수집
+      // Shadow DOM penetration collection
       function collectAll(selectors, root = document) {
         const results = [...root.querySelectorAll(selectors)];
         function traverse(node) {
@@ -401,7 +401,7 @@ async function getSnapshot() {
           }
           if (node.children) for (const c of node.children) traverse(c);
         }
-        // 주요 web component만 순회 (성능)
+        // main web componentonly circuit (performance)
         root.querySelectorAll("shreddit-post, shreddit-comment, shreddit-composer, faceplate-form, faceplate-textarea-input, shreddit-comment-tree").forEach(traverse);
         return results;
       }
@@ -454,14 +454,14 @@ async function getSnapshot() {
   return { elements: results[0]?.result || [] };
 }
 
-// 요소 클릭 (page-agent 방식 — Shadow DOM 관통 + 완전한 이벤트 시퀀스)
+// element click (page-agent method — Shadow DOM penetration + complete event sequence)
 async function clickElement(selector) {
   const tabId = await getActiveTabId();
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: (sel) => {
-      // Shadow DOM 관통 querySelector
+      // Shadow DOM penetration querySelector
       function findDeep(s) {
         let r = document.querySelector(s);
         if (r) return r;
@@ -481,7 +481,7 @@ async function clickElement(selector) {
       const el = findDeep(sel);
       if (!el) throw new Error(`Element not found: ${sel}`);
 
-      // 뷰포트에 보이게 스크롤
+      // in the viewport Make it visible scroll
       el.scrollIntoView({ behavior: "instant", block: "center" });
 
       const rect = el.getBoundingClientRect();
@@ -489,7 +489,7 @@ async function clickElement(selector) {
       const y = rect.top + rect.height / 2;
       const evtInit = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y };
 
-      // page-agent 이벤트 시퀀스 (mouseenter→mouseover→mousedown→focus→mouseup→click)
+      // page-agent event sequence (mouseenter→mouseover→mousedown→focus→mouseup→click)
       el.dispatchEvent(new MouseEvent("mouseenter", evtInit));
       el.dispatchEvent(new MouseEvent("mouseover", evtInit));
       el.dispatchEvent(new MouseEvent("mousedown", { ...evtInit, button: 0 }));
@@ -505,14 +505,14 @@ async function clickElement(selector) {
   return results[0]?.result;
 }
 
-// 요소에 입력 (page-agent 방식 — React/contenteditable/native input 호환)
+// to the element input (page-agent method — React/contenteditable/native input compatible)
 async function fillElement(selector, value) {
   const tabId = await getActiveTabId();
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: (sel, val) => {
-      // Shadow DOM 관통 검색
+      // Shadow DOM penetration search
       function findDeep(s) {
         let r = document.querySelector(s);
         if (r) return r;
@@ -540,7 +540,7 @@ async function fillElement(selector, value) {
       const isContentEditable = el.getAttribute("contenteditable") === "true" || el.isContentEditable;
 
       if (isContentEditable) {
-        // page-agent contentEditable 입력: beforeinput(delete)→clear→input→beforeinput(insert)→set→input→change
+        // page-agent contentEditable input: beforeinput(delete)→clear→input→beforeinput(insert)→set→input→change
         if (el.dispatchEvent(new InputEvent("beforeinput", {
           bubbles: true, cancelable: true, inputType: "deleteContent"
         }))) {
@@ -576,7 +576,7 @@ async function fillElement(selector, value) {
   return results[0]?.result;
 }
 
-// 키 입력
+// key input
 async function pressKey(key) {
   const tabId = await getActiveTabId();
 
@@ -609,7 +609,7 @@ async function pressKey(key) {
   return results[0]?.result;
 }
 
-// 스크롤
+// scroll
 async function scroll(direction, amount = 500) {
   const tabId = await getActiveTabId();
 
@@ -632,7 +632,7 @@ async function scroll(direction, amount = 500) {
   return results[0]?.result;
 }
 
-// 페이지 텍스트 가져오기
+// page text import
 async function getPageText() {
   const tabId = await getActiveTabId();
 
@@ -646,7 +646,7 @@ async function getPageText() {
   return { text: results[0]?.result || "" };
 }
 
-// 페이지 HTML 가져오기
+// page HTML import
 async function getPageHtml(maxChars = 200000) {
   const tabId = await getActiveTabId();
   const limit = Math.max(1000, Math.min(Number(maxChars) || 200000, 2000000));
@@ -663,7 +663,7 @@ async function getPageHtml(maxChars = 200000) {
   return { html: results[0]?.result || "" };
 }
 
-// 페이지 링크 수집 (eval 불필요)
+// page link collection (eval otiosity)
 async function getLinks(pattern, limit = 20) {
   const tabId = await getActiveTabId();
   const results = await chrome.scripting.executeScript({
@@ -688,7 +688,7 @@ async function getLinks(pattern, limit = 20) {
   return { links: results[0]?.result || [] };
 }
 
-// 페이지 기본 정보 (eval 불필요)
+// page basic information (eval otiosity)
 async function getPageInfo() {
   const tabId = await getActiveTabId();
   const results = await chrome.scripting.executeScript({
@@ -704,9 +704,9 @@ async function getPageInfo() {
   return results[0]?.result || {};
 }
 
-// ═══ Reddit 전용 커맨드 (page-agent 방식 — Shadow DOM 관통) ═══
+// ═══ Reddit exclusive command (page-agent method — Shadow DOM penetration) ═══
 
-// Reddit 댓글 작성 — page-agent 방식 Shadow DOM 완전 관통
+// Reddit Write a comment — page-agent method Shadow DOM perfection penetration
 async function redditComment(body) {
   const tabId = await getActiveTabId();
   const log = [];
@@ -717,7 +717,7 @@ async function redditComment(body) {
     log.push('debugger attach failed: ' + e.message);
   }
 
-  // Step 1: 트리거 좌표 찾기 (executeScript)
+  // Step 1: trigger coordinate Find (executeScript)
   const step1 = await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
@@ -729,12 +729,12 @@ async function redditComment(body) {
       if (trigger) {
         trigger.scrollIntoView({ behavior: 'instant', block: 'center' });
         let rect = trigger.getBoundingClientRect();
-        // display:contents인 경우 shadow root 자식에서 좌표 가져오기
+        // display:contentsperson case shadow root in git coordinate import
         if (rect.width === 0 && trigger.shadowRoot) {
           const inner = trigger.shadowRoot.querySelector('div, span, textarea, input');
           if (inner) rect = inner.getBoundingClientRect();
         }
-        // 그래도 0이면 Range로 시도
+        // still 0This side Rangeas trial
         if (rect.width === 0) {
           const range = document.createRange();
           range.selectNodeContents(trigger);
@@ -750,10 +750,10 @@ async function redditComment(body) {
   log.push('trigger: ' + JSON.stringify(triggerInfo));
 
   if (!triggerInfo.found) {
-    return { success: false, error: '트리거 미발견', log };
+    return { success: false, error: 'trigger undiscovered', log };
   }
 
-  // Step 2: CDP 클릭으로 에디터 열기
+  // Step 2: CDP with a click editor opening
   try {
     await sendDebuggerCommand(tabId, 'Input.dispatchMouseEvent', {
       type: 'mousePressed', x: triggerInfo.x, y: triggerInfo.y, button: 'left', clickCount: 1,
@@ -772,7 +772,7 @@ async function redditComment(body) {
 
   await new Promise(r => setTimeout(r, 2500));
 
-  // Step 3: 에디터에 텍스트 입력 (executeScript + execCommand)
+  // Step 3: In the editor text input (executeScript + execCommand)
   const step3 = await chrome.scripting.executeScript({
     target: { tabId },
     func: (commentBody) => {
@@ -804,7 +804,7 @@ async function redditComment(body) {
       if (!editor) { log.push('NO EDITOR'); return { ok: false, log }; }
 
       let rect = editor.getBoundingClientRect();
-      // display:contents 보정 — 부모 composer에서 실제 렌더링된 좌표
+      // display:contents correction — parents composerat actual rendered coordinate
       if (rect.width === 0) {
         const comp = editor.closest('shreddit-composer');
         if (comp && comp.shadowRoot) {
@@ -821,13 +821,13 @@ async function redditComment(body) {
       }
       log.push('editor: ' + Math.round(rect.width) + 'x' + Math.round(rect.height));
 
-      // 에디터가 보이지 않으면 CDP 클릭이 필요 — 좌표 반환
+      // The editor I can't see it If not CDP click necessary — coordinate return
       if (rect.width === 0) {
         log.push('editor still 0x0 — returning for CDP click');
         return { ok: false, needCdpClick: true, log };
       }
 
-      // 포커스 + execCommand (Lexical 호환)
+      // focus + execCommand (Lexical compatible)
       editor.focus();
       const sel = window.getSelection();
       const range = document.createRange();
@@ -840,7 +840,7 @@ async function redditComment(body) {
       const editorText = (editor.innerText || '').trim();
       log.push('text: ' + editorText.slice(0, 50));
 
-      // Submit 버튼 좌표 찾기
+      // Submit button coordinate Find
       let btnRect = null;
       let btnText = '';
       const form = editor.closest('faceplate-form') || editor.closest('shreddit-composer');
@@ -875,18 +875,18 @@ async function redditComment(body) {
   let inputInfo = step3[0]?.result || {};
   log.push(...(inputInfo.log || []));
 
-  // 에디터가 0x0 — 실제 클릭 가능한 영역 찾고 CDP 타이핑
+  // The editor 0x0 — actual click possible area looking for CDP typing
   if (!inputInfo.ok && inputInfo.needCdpClick) {
     log.push('fallback: find clickable editor area');
 
-    // Step 3.5: 에디터 영역의 실제 좌표 찾기 (부모/형제/slot에서)
+    // Step 3.5: editor of the realm actual coordinate Find (parents/sibling/slotat)
     const step3a = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        // 방법1: shreddit-composer 안의 보이는 요소 찾기
+        // method1: shreddit-composer in visible element Find
         const composers = document.querySelectorAll('shreddit-composer');
         for (const comp of composers) {
-          // Shadow DOM 안의 에디터 컨테이너
+          // Shadow DOM in editor container
           if (comp.shadowRoot) {
             const rte = comp.shadowRoot.querySelector('reddit-rte, .editor-container, [slot], div');
             if (rte) {
@@ -894,7 +894,7 @@ async function redditComment(body) {
               if (r.width > 50 && r.height > 20) return { x: Math.round(r.x + 20), y: Math.round(r.y + 20), src: 'shadow-rte' };
             }
           }
-          // 직접 자식 중 보이는 것
+          // directly child middle visible thing
           const children = comp.querySelectorAll('*');
           for (const child of children) {
             const r = child.getBoundingClientRect();
@@ -902,17 +902,17 @@ async function redditComment(body) {
               return { x: Math.round(r.x + 20), y: Math.round(r.y + 20), src: 'composer-child:' + child.tagName };
             }
           }
-          // composer 자체
+          // composer self
           const cr = comp.getBoundingClientRect();
           if (cr.width > 50) return { x: Math.round(cr.x + 20), y: Math.round(cr.y + 50), src: 'composer-self' };
         }
-        // 방법2: p[data-lexical-text] 근처
+        // method2: p[data-lexical-text] around
         const lp = document.querySelector('p[data-lexical-text]');
         if (lp) {
           const r = lp.getBoundingClientRect();
           if (r.width > 0) return { x: Math.round(r.x + 10), y: Math.round(r.y + 5), src: 'lexical-p' };
         }
-        // 방법3: 제출 버튼 위쪽 (에디터는 보통 버튼 바로 위)
+        // method3: submit button topside (The editor commonly button as soon as stomach)
         const btns = document.querySelectorAll('button');
         for (const b of btns) {
           if ((b.textContent || '').trim().toLowerCase() === 'comment') {
@@ -927,7 +927,7 @@ async function redditComment(body) {
     log.push('editor coords: ' + JSON.stringify(editorCoords));
 
     try {
-      // 에디터 영역 CDP 클릭으로 포커스
+      // editor area CDP with a click focus
       if (editorCoords) {
         await sendDebuggerCommand(tabId, 'Input.dispatchMouseEvent', {
           type: 'mousePressed', x: editorCoords.x, y: editorCoords.y, button: 'left', clickCount: 1,
@@ -939,14 +939,14 @@ async function redditComment(body) {
         log.push('CDP click editor at ' + editorCoords.src);
       }
 
-      // Ctrl+A로 기존 내용 선택 후 삭제
+      // Ctrl+Aas existing detail select after delete
       await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', modifiers: 2 });
       await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA' });
       await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', key: 'Backspace', code: 'Backspace' });
       await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: 'Backspace', code: 'Backspace' });
       await new Promise(r => setTimeout(r, 300));
 
-      // 텍스트 입력 (랜덤 딜레이로 사람처럼)
+      // text input (random With delay like a person)
       for (const char of body) {
         await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyDown', text: char, key: char, code: '' });
         await sendDebuggerCommand(tabId, 'Input.dispatchKeyEvent', { type: 'keyUp', key: char, code: '' });
@@ -955,7 +955,7 @@ async function redditComment(body) {
       log.push('CDP typeText done (' + body.length + ' chars)');
     } catch (e) {
       log.push('CDP typeText failed: ' + e.message);
-      // fill fallback — input 이벤트도 발생시킴
+      // fill fallback — input Events too causes
       await chrome.scripting.executeScript({
         target: { tabId },
         func: (text) => {
@@ -978,18 +978,18 @@ async function redditComment(body) {
 
     await new Promise(r => setTimeout(r, 1000));
 
-    // 버튼 좌표 다시 찾기
+    // button coordinate again Find
     const step3b = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        // 에디터 텍스트 확인
+        // editor text check
         const composers = document.querySelectorAll('shreddit-composer');
         let editorText = '';
         for (const comp of composers) {
           const ed = comp.querySelector('div[contenteditable="true"]');
           if (ed) { editorText = (ed.innerText || '').trim(); break; }
         }
-        // 버튼 찾기
+        // button Find
         let btnRect = null, btnText = '';
         const allBtns = document.querySelectorAll('button');
         for (const b of allBtns) {
@@ -1003,7 +1003,7 @@ async function redditComment(body) {
             }
           }
         }
-        // 버튼도 0x0이면 JS click 시도
+        // Button too 0x0This side JS click trial
         if (!btnRect) {
           for (const b of allBtns) {
             const t = (b.textContent || '').trim().toLowerCase();
@@ -1019,7 +1019,7 @@ async function redditComment(body) {
     log.push('btn: ' + inputInfo.btnText + ' ' + JSON.stringify(inputInfo.btnRect));
 
     if (inputInfo.btnText === 'JS-clicked') {
-      // 이미 JS로 클릭됨
+      // already JSas Clicked
       log.push('submit via JS click');
       await new Promise(r => setTimeout(r, 3000));
       const step5 = await chrome.scripting.executeScript({
@@ -1029,15 +1029,15 @@ async function redditComment(body) {
       });
       const verified = step5[0]?.result || false;
       log.push('verified=' + verified);
-      return { success: true, verified, log, message: verified ? '댓글 확인됨' : '미확인' };
+      return { success: true, verified, log, message: verified ? 'comment confirmed' : 'unconfirmed' };
     }
   }
 
-  if (!inputInfo.ok) return { success: false, error: '에디터 없음', log };
+  if (!inputInfo.ok) return { success: false, error: "editor doesn't exist", log };
   if (!inputInfo.editorText || inputInfo.editorText.length < 5) log.push('WARNING: editor text empty');
-  if (!inputInfo.btnRect) return { success: false, error: '제출 버튼 없음', bodyEntered: true, log };
+  if (!inputInfo.btnRect) return { success: false, error: "submit button doesn't exist", bodyEntered: true, log };
 
-  // Step 4: CDP 클릭으로 제출
+  // Step 4: CDP with a click submit
   await new Promise(r => setTimeout(r, 500));
   try {
     await sendDebuggerCommand(tabId, 'Input.dispatchMouseEvent', {
@@ -1060,7 +1060,7 @@ async function redditComment(body) {
     });
   }
 
-  // Step 5: 검증
+  // Step 5: verification
   await new Promise(r => setTimeout(r, 3000));
   const step5 = await chrome.scripting.executeScript({
     target: { tabId },
@@ -1070,11 +1070,11 @@ async function redditComment(body) {
 
   const verified = step5[0]?.result || false;
   log.push('verified=' + verified);
-  return { success: true, verified, log, message: verified ? '댓글 확인됨' : '미확인' };
+  return { success: true, verified, log, message: verified ? 'comment confirmed' : 'unconfirmed' };
 }
 
 
-// Reddit 포스트 목록 수집 (서브레딧 페이지에서)
+// Reddit post inventory collection (subreddit on the page)
 async function redditGetPosts(limit = 10) {
   const tabId = await getActiveTabId();
 
@@ -1082,7 +1082,7 @@ async function redditGetPosts(limit = 10) {
     target: { tabId },
     func: (lim) => {
       const posts = [];
-      // shreddit-post 요소
+      // shreddit-post element
       const postEls = document.querySelectorAll("shreddit-post");
       for (const el of postEls) {
         const title = el.getAttribute("post-title") || "";
@@ -1106,7 +1106,7 @@ async function redditGetPosts(limit = 10) {
         if (posts.length >= lim) break;
       }
 
-      // shreddit-post가 없으면 링크 기반 fallback
+      // shreddit-postgo If there is no link based fallback
       if (posts.length === 0) {
         const links = document.querySelectorAll('a[href*="/comments/"]');
         const seen = new Set();
@@ -1134,7 +1134,7 @@ async function redditGetPosts(limit = 10) {
   return { posts: results[0]?.result || [] };
 }
 
-// Reddit 포스트 상세 정보 (포스트 페이지에서)
+// Reddit post particular information (post on the page)
 async function redditGetPostDetail() {
   const tabId = await getActiveTabId();
 
@@ -1149,7 +1149,7 @@ async function redditGetPostDetail() {
       const subreddit = post?.getAttribute("subreddit-prefixed-name") || "";
       const createdAt = post?.getAttribute("created-timestamp") || "";
 
-      // 본문 추출
+      // text extraction
       const bodyEl = document.querySelector('[slot="text-body"]')
         || document.querySelector(".text-neutral-content");
       const body = bodyEl ? bodyEl.textContent.trim() : "";
@@ -1164,7 +1164,7 @@ async function redditGetPostDetail() {
   return results[0]?.result || {};
 }
 
-// Reddit 댓글 목록 수집 (포스트 페이지에서)
+// Reddit comment inventory collection (post on the page)
 async function redditGetComments(limit = 30) {
   const tabId = await getActiveTabId();
 
@@ -1179,7 +1179,7 @@ async function redditGetComments(limit = 30) {
         const depth = parseInt(el.getAttribute("depth")) || 0;
         const thingId = el.getAttribute("thingid") || "";
 
-        // 댓글 본문
+        // comment text
         const bodyEl = el.querySelector('[slot="comment"]')
           || el.querySelector(".md");
         const body = bodyEl ? bodyEl.textContent.trim().substring(0, 500) : "";
@@ -1197,14 +1197,14 @@ async function redditGetComments(limit = 30) {
   return { comments: results[0]?.result || [] };
 }
 
-// Reddit 로그인 상태 확인
+// Reddit login status check
 async function redditCheckLogin() {
   const tabId = await getActiveTabId();
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
-      // 여러 셀렉터로 로그인 감지 (Reddit UI 변경 대응)
+      // several with selector log in detect (Reddit UI change react)
       const expandBtn = document.querySelector("#expand-user-drawer-button");
       const userMenu = document.querySelector('[id*="user-drawer"]')
         || document.querySelector('button[aria-label*="profile"]')
@@ -1215,12 +1215,12 @@ async function redditCheckLogin() {
       const loginBtnAlt = document.querySelector('button[data-testid="login-button"]')
         || document.querySelector('a[data-testid="login-button"]');
 
-      // 로그인 버튼이 없고, 유저 메뉴가 있으면 로그인된 것
+      // log in the button There is no, posthumous work the menu If there is logged in thing
       const hasUserElement = !!(expandBtn || userMenu);
       const hasLoginBtn = !!(loginBtn || loginBtnAlt);
       const loggedIn = hasUserElement || !hasLoginBtn;
 
-      // 유저네임 추출 시도
+      // attempt to extract username
       let username = expandBtn?.textContent?.trim() || "";
       if (!username && userMenu) {
         username = userMenu.textContent?.trim() || "";
@@ -1236,7 +1236,7 @@ async function redditCheckLogin() {
   return results[0]?.result || { loggedIn: false };
 }
 
-// ═══ page-agent 스타일 DOM 트리 추출 ═══
+// ═══ page-agent style DOM tree extraction ═══
 async function getDomTree(maxDepth = 5, maxNodes = 200) {
   const tabId = await getActiveTabId();
 
@@ -1252,7 +1252,7 @@ async function getDomTree(maxDepth = 5, maxNodes = 200) {
         "button", "link", "textbox", "checkbox", "radio", "menuitem", "tab",
       ]);
 
-      // 전역 인덱스 매핑 저장 (clickByIndex/fillByIndex에서 사용)
+      // Global index mapping save (clickByIndex/fillByIndexat use)
       window.__redditDomMap = [];
 
       function traverse(el, depth) {
@@ -1291,14 +1291,14 @@ async function getDomTree(maxDepth = 5, maxNodes = 200) {
             rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) },
           };
 
-          // shreddit-post 추가 속성
+          // shreddit-post addition attribute
           if (tag === "SHREDDIT-POST") {
             node.postTitle = el.getAttribute("post-title");
             node.author = el.getAttribute("author");
             node.score = el.getAttribute("score");
             node.permalink = el.getAttribute("permalink");
           }
-          // shreddit-comment 추가 속성
+          // shreddit-comment addition attribute
           if (tag === "SHREDDIT-COMMENT") {
             node.author = el.getAttribute("author");
             node.score = el.getAttribute("score");
@@ -1307,7 +1307,7 @@ async function getDomTree(maxDepth = 5, maxNodes = 200) {
           }
         }
 
-        // 자식 순회
+        // child circuit
         const children = [];
         for (const child of el.children) {
           const c = traverse(child, depth + 1);
@@ -1332,7 +1332,7 @@ async function getDomTree(maxDepth = 5, maxNodes = 200) {
   return results[0]?.result || {};
 }
 
-// page-agent 스타일 인덱스 기반 클릭
+// page-agent style index based click
 async function clickByIndex(index) {
   const tabId = await getActiveTabId();
 
@@ -1366,7 +1366,7 @@ async function clickByIndex(index) {
   return results[0]?.result;
 }
 
-// page-agent 스타일 인덱스 기반 입력
+// page-agent style index based input
 async function fillByIndex(index, value) {
   const tabId = await getActiveTabId();
 
@@ -1406,26 +1406,26 @@ async function fillByIndex(index, value) {
   return results[0]?.result;
 }
 
-// ═══ Reddit 추가 전용 커맨드 ═══
+// ═══ Reddit addition exclusive command ═══
 
-// Reddit 업보트 (포스트 또는 댓글)
+// Reddit Upvote (post or comment)
 async function redditUpvote(selector) {
   const tabId = await getActiveTabId();
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: (sel) => {
-      // 셀렉터 지정 시 해당 요소 내에서, 아니면 페이지 첫 포스트
+      // selector designation city corresponding element within, or not page first post
       const container = sel ? document.querySelector(sel) : document.querySelector("shreddit-post");
-      if (!container) return { success: false, error: "대상 없음" };
+      if (!container) return { success: false, error: "Target doesn't exist" };
 
       const upBtn = container.querySelector('button[upvote]')
         || container.querySelector('button[aria-label*="upvote"]')
         || container.querySelector('button[aria-label*="Upvote"]');
 
-      if (!upBtn) return { success: false, error: "업보트 버튼 없음" };
+      if (!upBtn) return { success: false, error: "Upvote button doesn't exist" };
 
-      // 이미 눌려있는지 확인
+      // already Is it pressed? check
       const pressed = upBtn.getAttribute("aria-pressed") === "true";
       if (pressed) return { success: true, alreadyUpvoted: true };
 
@@ -1447,7 +1447,7 @@ async function redditUpvote(selector) {
   return results[0]?.result || { success: false };
 }
 
-// Reddit 검색 (서브레딧 내 or 전체)
+// Reddit search (subreddit my or entire)
 async function redditSearch(query, subreddit, sort = "relevance", limit = 10) {
   const tabId = await getActiveTabId();
 
@@ -1462,24 +1462,24 @@ async function redditSearch(query, subreddit, sort = "relevance", limit = 10) {
   return await redditGetPosts(limit);
 }
 
-// Reddit 포스트 작성 (CDP + JS 하이브리드)
+// Reddit post write (CDP + JS hybrid)
 async function redditSubmitPost(subreddit, title, body, autoSubmit = false) {
   const tabId = await getActiveTabId();
   const log = [];
 
-  // Step 1: 포스트 작성 페이지로 이동
+  // Step 1: post write to page movement
   const submitUrl = `https://www.reddit.com/r/${subreddit}/submit?type=TEXT`;
   log.push(`Navigating to ${submitUrl}`);
   await chrome.tabs.update(tabId, { url: submitUrl });
   await waitForPageLoad();
   await new Promise(r => setTimeout(r, 3000));
 
-  // Step 2: 제목 입력 (CDP typeText 사용)
+  // Step 2: title input (CDP typeText use)
   log.push("Entering title...");
   try {
     await ensureDebugger(tabId);
 
-    // 제목 필드 찾기 + 클릭
+    // title field Find + click
     const titleResult = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
@@ -1506,7 +1506,7 @@ async function redditSubmitPost(subreddit, title, body, autoSubmit = false) {
       });
       await new Promise(r => setTimeout(r, 300));
 
-      // CDP로 텍스트 입력
+      // CDPas text input
       for (const ch of title) {
         await sendDebuggerCommand(tabId, "Input.dispatchKeyEvent", {
           type: "keyDown", text: ch, key: ch,
@@ -1545,7 +1545,7 @@ async function redditSubmitPost(subreddit, title, body, autoSubmit = false) {
 
   await new Promise(r => setTimeout(r, 1000));
 
-  // Step 3: 본문 입력
+  // Step 3: text input
   log.push("Entering body...");
   try {
     const bodyResult = await chrome.scripting.executeScript({
@@ -1602,7 +1602,7 @@ async function redditSubmitPost(subreddit, title, body, autoSubmit = false) {
 
   await new Promise(r => setTimeout(r, 1000));
 
-  // Step 4: 자동 제출 (autoSubmit == true일 때만)
+  // Step 4: automatic submit (autoSubmit == trueDay only)
   if (autoSubmit) {
     log.push("Auto-submitting...");
     const submitResult = await chrome.scripting.executeScript({
@@ -1638,33 +1638,33 @@ async function redditSubmitPost(subreddit, title, body, autoSubmit = false) {
   return { success: autoSubmit, ready: !autoSubmit, log };
 }
 
-// Reddit 댓글에 답글 달기 (thingId 기반)
+// Reddit In the comments Reply Put it on (thingId based)
 async function redditReplyToComment(thingId, body) {
   const tabId = await getActiveTabId();
 
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: (tid, replyBody) => {
-      // thingId로 댓글 찾기
+      // thingIdas comment Find
       const comment = document.querySelector(`shreddit-comment[thingid="${tid}"]`);
-      if (!comment) return { success: false, error: `댓글 ${tid} 없음` };
+      if (!comment) return { success: false, error: `comment ${tid} doesn't exist` };
 
-      // Reply 버튼 찾기
+      // Reply button Find
       const replyBtn = comment.querySelector('button[aria-label*="Reply"]')
         || comment.querySelector('button[aria-label*="reply"]');
 
-      if (!replyBtn) return { success: false, error: "Reply 버튼 없음" };
+      if (!replyBtn) return { success: false, error: "Reply button doesn't exist" };
 
       replyBtn.click();
 
       return new Promise((resolve) => {
         setTimeout(() => {
-          // 답글 입력 영역 찾기 (댓글 내부)
+          // Reply input area Find (comment interior)
           const editor = comment.querySelector('div[contenteditable="true"]')
             || comment.querySelector('faceplate-form div[contenteditable="true"]');
 
           if (!editor) {
-            resolve({ success: false, error: "답글 입력 영역 없음" });
+            resolve({ success: false, error: "Reply input area doesn't exist" });
             return;
           }
 
@@ -1689,9 +1689,9 @@ async function redditReplyToComment(thingId, body) {
 
             if (btn && !btn.disabled) {
               btn.click();
-              resolve({ success: true, message: "답글 제출됨" });
+              resolve({ success: true, message: "Reply Submitted" });
             } else {
-              resolve({ success: false, error: "제출 버튼 없음", bodyEntered: true });
+              resolve({ success: false, error: "submit button doesn't exist", bodyEntered: true });
             }
           }, 1000);
         }, 1500);
@@ -1703,7 +1703,7 @@ async function redditReplyToComment(thingId, body) {
   return results[0]?.result || { success: false };
 }
 
-// Reddit 현재 로그인 사용자 정보
+// Reddit today log in user information
 async function redditGetUserInfo() {
   const tabId = await getActiveTabId();
 
@@ -1713,7 +1713,7 @@ async function redditGetUserInfo() {
       const userBtn = document.querySelector("#expand-user-drawer-button");
       const username = userBtn?.textContent?.trim() || "";
 
-      // 카르마 정보 (프로필 드로어에서)
+      // karma information (profile from drawer)
       const karmaEls = document.querySelectorAll('[id*="karma"], [data-testid*="karma"]');
       let karma = null;
       for (const el of karmaEls) {
@@ -1733,7 +1733,7 @@ async function redditGetUserInfo() {
   return results[0]?.result || { loggedIn: false };
 }
 
-// Reddit 서브레딧으로 이동
+// Reddit To subreddit movement
 async function redditNavigateSub(subreddit, sort = "hot") {
   const tabId = await getActiveTabId();
   const url = `https://www.reddit.com/r/${subreddit}/${sort}/`;
@@ -1741,7 +1741,7 @@ async function redditNavigateSub(subreddit, sort = "hot") {
   await waitForPageLoad();
   await new Promise(r => setTimeout(r, 2000));
 
-  // 서브레딧 정보 수집
+  // subreddit information collection
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
@@ -1760,12 +1760,12 @@ async function redditNavigateSub(subreddit, sort = "hot") {
   return results[0]?.result || { success: true, url: `https://www.reddit.com/r/${subreddit}/` };
 }
 
-// CDP 기반 좌표 클릭 — Shadow DOM 내부까지 도달
+// CDP based coordinate click — Shadow DOM to the inside arrival
 async function clickCoords(x, y) {
   const tabId = await getActiveTabId();
   await ensureDebugger(tabId);
 
-  // mousePressed + mouseReleased (실제 브라우저 클릭)
+  // mousePressed + mouseReleased (actual browser click)
   await sendDebuggerCommand(tabId, "Input.dispatchMouseEvent", {
     type: "mousePressed",
     x: Math.round(x),
@@ -1784,7 +1784,7 @@ async function clickCoords(x, y) {
   return { success: true, x: Math.round(x), y: Math.round(y) };
 }
 
-// CDP 기반 텍스트 입력 — 키보드 이벤트로 실제 타이핑
+// CDP based text input — keyboard to event actual typing
 async function typeText(text) {
   const tabId = await getActiveTabId();
   await ensureDebugger(tabId);
@@ -1802,18 +1802,18 @@ async function typeText(text) {
       key: char,
       code: `Key${char.toUpperCase()}`,
     });
-    // 봇 감지 회피: 50-200ms 랜덤 타이핑 딜레이 (인간 타이핑 속도 시뮬레이션)
+    // bot detect evasion: 50-200ms random typing delay (human being typing speed simulation)
     await new Promise(r => setTimeout(r, 50 + Math.random() * 150));
   }
 
   return { success: true, length: text.length };
 }
 
-// 디버거 attach 헬퍼
+// debugger attach helper
 async function ensureDebugger(tabId) {
   if (isDebugging && debugTabId === tabId) return;
 
-  // 기존 디버거 detach (어떤 탭이든)
+  // existing debugger detach (which tab or)
   if (isDebugging && debugTabId) {
     try {
       await new Promise((r) => chrome.debugger.detach({ tabId: debugTabId }, () => r()));
@@ -1822,7 +1822,7 @@ async function ensureDebugger(tabId) {
     debugTabId = null;
   }
 
-  // 대상 탭의 기존 디버거도 detach 시도
+  // Target of tab existing Debugger too detach trial
   try {
     await new Promise((r) => chrome.debugger.detach({ tabId }, () => r()));
   } catch {}
@@ -1845,11 +1845,11 @@ async function ensureDebugger(tabId) {
   try { await sendDebuggerCommand(tabId, "Input.enable", {}); } catch {}
 }
 
-// 스크립트 실행 (Debugger Runtime.evaluate — CSP 완전 우회)
+// script execution (Debugger Runtime.evaluate — CSP perfection detour)
 async function evaluateScript(script) {
   const tabId = await getActiveTabId();
 
-  // 디버거가 아직 안 붙어있으면 붙이기
+  // debugger yet not If it sticks Paste
   if (!isDebugging || debugTabId !== tabId) {
     if (isDebugging && debugTabId && debugTabId !== tabId) {
       try {
@@ -1868,7 +1868,7 @@ async function evaluateScript(script) {
     try { await sendDebuggerCommand(tabId, "Runtime.enable", {}); } catch {}
   }
 
-  // Runtime.evaluate로 실행 (CSP 무시)
+  // Runtime.evaluateas execution (CSP ignore)
   const evalResult = await sendDebuggerCommand(tabId, "Runtime.evaluate", {
     expression: script,
     returnByValue: true,
@@ -1949,7 +1949,7 @@ async function consoleGet(limit = 200) {
   };
 }
 
-// 메시지 핸들러 (popup에서 상태 확인용 + 녹화 액션 수신)
+// message handler (popupat situation For confirmation + telerecording action reception)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "getStatus") {
     sendResponse({ connected: ws && ws.readyState === WebSocket.OPEN });
@@ -1973,7 +1973,7 @@ async function recordingStart() {
   const tabId = await getActiveTabId();
 
   if (isRecording) {
-    return { success: false, message: "이미 녹화 중입니다." };
+    return { success: false, message: "already telerecording In progress." };
   }
 
   isRecording = true;
@@ -1996,7 +1996,7 @@ async function recordingStart() {
 // Recording: stop and return collected actions
 async function recordingStop() {
   if (!isRecording) {
-    return { success: false, message: "녹화 중이 아닙니다." };
+    return { success: false, message: "telerecording drum no." };
   }
 
   // Cleanup content script
@@ -2055,17 +2055,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// Extension 설치/업데이트 시 연결
+// Extension installation/update city connection
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("[레딧] Extension 설치/업데이트됨");
+  console.log("[reddit] Extension installation/updated");
   connect();
 });
 
-// 브라우저 시작 시 연결
+// browser start city connection
 chrome.runtime.onStartup.addListener(() => {
-  console.log("[레딧] 브라우저 시작됨");
+  console.log("[reddit] browser Started");
   connect();
 });
 
-// 시작 시 연결 시도
+// start city connection trial
 connect();

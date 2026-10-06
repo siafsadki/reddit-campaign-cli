@@ -1,4 +1,4 @@
-// 자동 업데이트 확인 - manifest 버전과 비교
+// automatic update check - manifest version and comparison
 async function checkAndReload() {
   try {
     const manifest = chrome.runtime.getManifest();
@@ -6,36 +6,36 @@ async function checkAndReload() {
     const resp = await fetch(chrome.runtime.getURL("manifest.json") + "?t=" + Date.now());
     const diskManifest = await resp.json();
     if (diskManifest.version !== manifest.version) {
-      console.log("[레딧] 새 버전 감지:", manifest.version, "→", diskManifest.version);
+      console.log("[reddit] New version detected:", manifest.version, "→", diskManifest.version);
       chrome.runtime.reload();
       return;
     }
   } catch (e) {
-    console.log("[레딧] 버전 확인 실패:", e);
+    console.log("[reddit] version check failure:", e);
   }
 }
 
-// 연결 상태 확인
+// Connection status check
 async function checkStatus() {
   const statusEl = document.getElementById("status");
 
   try {
-    // background에서 상태 확인
+    // Check status in background
     const response = await chrome.runtime.sendMessage({ type: "getStatus" });
     if (response?.connected) {
       statusEl.className = "status connected";
-      statusEl.textContent = "✓ 연결됨";
+      statusEl.textContent = "✓ connected";
     } else {
       statusEl.className = "status disconnected";
-      statusEl.textContent = "연결 대기 중...";
+      statusEl.textContent = "connection status middle...";
     }
   } catch (e) {
     statusEl.className = "status disconnected";
-    statusEl.textContent = "연결 대기 중...";
+    statusEl.textContent = "connection status middle...";
   }
 }
 
-// 먼저 업데이트 확인, 그 다음 상태 확인
+// Check for updates first, then check the connection status
 checkAndReload().then(() => {
   checkStatus();
   setInterval(checkStatus, 2000);

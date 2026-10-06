@@ -1,4 +1,4 @@
-"""Reddit 영향력 분석 — redd 라이브러리로 포스트/댓글 데이터 수집 + 보고서."""
+"""Reddit influence analyze — redd to library post/comment data collection + report."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ REPORT_DIR = "data/influence-reports"
 
 
 def _flatten_comments(comments, depth=0) -> list[dict]:
-    """댓글 트리를 플랫 리스트로 변환."""
+    """comment tree flat to list conversion."""
     flat = []
     for c in comments:
         flat.append({
@@ -29,7 +29,7 @@ def _flatten_comments(comments, depth=0) -> list[dict]:
 
 
 def _sentiment_label(body: str) -> str:
-    """간단한 감정 분류."""
+    """simple emotion classification."""
     body_lower = body.lower()
     positive = ["awesome", "cool", "great", "love", "nice", "amazing", "solid", "impressive", "thank"]
     negative = ["bad", "suck", "hate", "terrible", "ugly", "useless", "bloat", "garbage", "waste"]
@@ -52,11 +52,11 @@ def fetch_influence_data(
     username: str | None = None,
     permalink: str | None = None,
 ) -> list[dict]:
-    """DB에 저장된 submission들 또는 직접 permalink로 Reddit 데이터 수집."""
+    """DBto saved submissionfield or directly permalinkas Reddit data collection."""
     results = []
 
     with Redd(throttle=(1.0, 3.0)) as r:
-        # 1) permalink 직접 지정
+        # 1) permalink directly designation
         if permalink:
             show_info(f"Fetching: {permalink}")
             try:
@@ -66,7 +66,7 @@ def fetch_influence_data(
                 show_error(f"Failed to fetch {permalink}: {e}")
             return results
 
-        # 2) username으로 유저 포스트 조회
+        # 2) usernameby posthumous work post check
         if username:
             show_info(f"Fetching posts by u/{username}...")
             try:
@@ -82,7 +82,7 @@ def fetch_influence_data(
                 show_error(f"Failed to fetch user posts: {e}")
             return results
 
-        # 3) DB submissions에서 URL 가져오기
+        # 3) DB submissionsat URL import
         submissions = db.get_submissions()
         if not submissions:
             show_warning("No submissions in DB. Use --user or --url option.")
@@ -92,7 +92,7 @@ def fetch_influence_data(
             url = sub.get("url", "")
             if not url:
                 continue
-            # URL에서 permalink 추출
+            # URLat permalink extraction
             plink = url.replace("https://reddit.com", "").replace("https://www.reddit.com", "")
             show_info(f"Fetching: r/{sub.get('subreddit', '?')} - {sub.get('title', '?')[:40]}")
             try:
@@ -105,30 +105,30 @@ def fetch_influence_data(
 
 
 def _process_post_detail(detail, day_id: str | None = None) -> dict:
-    """PostDetail → 분석 dict로 변환."""
+    """PostDetail → analyze dictas conversion."""
     comments = _flatten_comments(detail.comments)
 
-    # 감정 분류
+    # emotion classification
     sentiments = {"positive": 0, "negative": 0, "neutral": 0, "question": 0}
     for c in comments:
         s = _sentiment_label(c["body"])
         c["sentiment"] = s
         sentiments[s] = sentiments.get(s, 0) + 1
 
-    # 상위 댓글 (score 기준)
+    # difference comment (score standard)
     top_comments = sorted(comments, key=lambda x: x["score"], reverse=True)[:10]
 
-    # 부정적 댓글
+    # negative comment
     negative_comments = [c for c in comments if c["sentiment"] == "negative"]
     negative_comments.sort(key=lambda x: x["score"], reverse=True)
 
-    # 질문 댓글
+    # question comment
     question_comments = [c for c in comments if c["sentiment"] == "question"]
 
-    # 유니크 참여자
+    # Unique participant
     authors = {c["author"] for c in comments if c["author"] not in ("[deleted]", "AutoModerator")}
 
-    # 평균 score
+    # average score
     avg_score = sum(c["score"] for c in comments) / len(comments) if comments else 0
 
     return {
@@ -152,7 +152,7 @@ def _process_post_detail(detail, day_id: str | None = None) -> dict:
 
 
 def write_influence_report(results: list[dict]) -> Path:
-    """영향력 분석 보고서 마크다운 작성."""
+    """influence analyze report markdown write."""
     Path(REPORT_DIR).mkdir(parents=True, exist_ok=True)
     now = datetime.now()
     filepath = Path(REPORT_DIR) / f"influence_{now.strftime('%Y-%m-%d_%H%M%S')}.md"
@@ -169,7 +169,7 @@ def write_influence_report(results: list[dict]) -> Path:
         filepath.write_text("\n".join(lines), encoding="utf-8")
         return filepath
 
-    # 전체 요약
+    # entire summation
     total_score = sum(r["score"] for r in results)
     total_comments = sum(r["num_comments"] for r in results)
     total_authors = sum(r["unique_authors"] for r in results)
@@ -194,7 +194,7 @@ def write_influence_report(results: list[dict]) -> Path:
         "",
     ])
 
-    # 포스트별 비교
+    # By post comparison
     lines.extend([
         "## Post Performance Comparison",
         "",
@@ -210,7 +210,7 @@ def write_influence_report(results: list[dict]) -> Path:
         )
     lines.append("")
 
-    # 각 포스트 상세
+    # each post particular
     for r in results:
         lines.extend([
             f"---",
@@ -228,7 +228,7 @@ def write_influence_report(results: list[dict]) -> Path:
             "",
         ])
 
-        # 감정 분포
+        # emotion distribution
         s = r["sentiments"]
         total = sum(s.values()) or 1
         lines.extend([
@@ -241,7 +241,7 @@ def write_influence_report(results: list[dict]) -> Path:
             "",
         ])
 
-        # Top 댓글
+        # Top comment
         if r["top_comments"]:
             lines.extend(["### Top Comments (by score)", ""])
             for c in r["top_comments"][:5]:
@@ -251,7 +251,7 @@ def write_influence_report(results: list[dict]) -> Path:
                 )
             lines.append("")
 
-        # 부정 댓글
+        # negative comment
         if r["negative_comments"]:
             lines.extend(["### Negative Comments", ""])
             for c in r["negative_comments"]:
@@ -261,7 +261,7 @@ def write_influence_report(results: list[dict]) -> Path:
                 )
             lines.append("")
 
-        # 질문 댓글
+        # question comment
         if r["question_comments"]:
             lines.extend(["### Questions Asked", ""])
             for c in r["question_comments"][:5]:
@@ -269,7 +269,7 @@ def write_influence_report(results: list[dict]) -> Path:
                 lines.append(f"- **u/{c['author']}**: {body}")
             lines.append("")
 
-    # 인사이트
+    # Insight
     lines.extend([
         "---",
         "",
@@ -308,7 +308,7 @@ def write_influence_report(results: list[dict]) -> Path:
 
 
 def show_influence_summary(results: list[dict]):
-    """터미널에 영향력 요약 출력."""
+    """to the terminal influence summation output of power."""
     from rich.panel import Panel
     from rich.table import Table
 
@@ -319,7 +319,7 @@ def show_influence_summary(results: list[dict]):
         console.print("  No data collected.")
         return
 
-    # 요약 테이블
+    # summation table
     table = Table(width=80, show_lines=True)
     table.add_column("Subreddit", style="cyan", width=18)
     table.add_column("Score", justify="right", width=8)
@@ -357,7 +357,7 @@ def show_influence_summary(results: list[dict]):
     )
     console.print(table)
 
-    # Top 3 댓글
+    # Top 3 comment
     all_comments = []
     for r in results:
         for c in r["top_comments"][:3]:

@@ -1,4 +1,4 @@
-"""Reddit Campaign 웹 대시보드 — 브라우저에서 캠페인 관리 + 활동 내역 조회."""
+"""Reddit Campaign web dashboard — in your browser campaign management + activity history check."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from .state import StateDB
 
 DB_PATH = "data/campaign.db"
 
-# 캠페인 실행 상태 (글로벌)
+# Campaign execution status (global)
 _campaign_runner = {"running": False, "thread": None, "log": [], "current_day": 0}
 
 
@@ -176,7 +176,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self._json_response({"report": report, "strategies": strategies})
 
     def _api_campaign_config(self):
-        """캠페인 설정 조회."""
+        """campaign setting check."""
         try:
             from .campaign_config import load_campaign, campaign_exists, to_dict
             if campaign_exists():
@@ -188,7 +188,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._json_response({"exists": False, "error": str(e)})
 
     def _api_save_campaign_config(self, data):
-        """캠페인 설정 저장."""
+        """campaign setting save."""
         try:
             from .campaign_config import CampaignConfig, SubTarget, PostTarget, Limits, save_campaign
 
@@ -226,7 +226,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._json_response({"success": False, "error": str(e)})
 
     def _api_schedule(self):
-        """30일 스케줄 조회."""
+        """30Day schedule check."""
         try:
             from .campaign_config import load_campaign, campaign_exists
             from .schedule import build_schedule, build_schedule_from_config
@@ -260,11 +260,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._json_response({"error": str(e)})
 
     def _api_run_campaign(self, data):
-        """캠페인 실행 (백그라운드 스레드)."""
+        """campaign execution (background thread)."""
         global _campaign_runner
 
         if _campaign_runner["running"]:
-            self._json_response({"success": False, "error": "이미 실행 중입니다"})
+            self._json_response({"success": False, "error": "already execution In progress"})
             return
 
         dry_run = data.get("dry_run", False)
@@ -291,26 +291,26 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         t = threading.Thread(target=run, daemon=True)
         t.start()
         _campaign_runner["thread"] = t
-        self._json_response({"success": True, "message": "캠페인 시작됨"})
+        self._json_response({"success": True, "message": "campaign Started"})
 
     def _api_stop_campaign(self):
-        """캠페인 중지."""
+        """campaign stop."""
         global _campaign_runner
         _campaign_runner["running"] = False
-        self._json_response({"success": True, "message": "중지 요청됨"})
+        self._json_response({"success": True, "message": "stop requested"})
 
     def _api_runner_status(self):
-        """캠페인 실행 상태."""
+        """Campaign execution status."""
         self._json_response({
             "running": _campaign_runner["running"],
             "log": _campaign_runner["log"][-50:],
         })
 
     def _api_reset_day(self, data):
-        """특정 날 상태 리셋."""
+        """Reset a specific day's status."""
         day_id = data.get("day_id", "")
         if not day_id:
-            self._json_response({"success": False, "error": "day_id 필요"})
+            self._json_response({"success": False, "error": "day_id necessary"})
             return
         db = StateDB(DB_PATH)
         db.set_day_status(day_id, "pending")
@@ -330,7 +330,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 def run_web_dashboard(port: int = 8090):
-    """웹 대시보드 서버 시작."""
+    """web dashboard server start."""
     server = HTTPServer(("0.0.0.0", port), DashboardHandler)
     print(f"Dashboard: http://localhost:{port}")
     try:
@@ -580,7 +580,7 @@ async function loadCampaignConfig() {
     el.innerHTML = `
       <div class="form-section">
         <h3>Campaign Not Configured</h3>
-        <p style="color:#888;margin:12px 0">campaign.toml이 없습니다. 아래에서 새 캠페인을 설정하세요.</p>
+        <p style="color:#888;margin:12px 0">campaign.tomlthis doesn't exist. from below bird campaign Please set it up.</p>
         ${renderCampaignForm({
           product: {name:'', url:'', tagline:'', category:'developer_tool'},
           reddit: {username:''},

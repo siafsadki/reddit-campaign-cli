@@ -1,4 +1,4 @@
-"""마케팅 엔진 — 모든 Reddit 액션의 판단/실행 레이어."""
+"""marketing engine — every Reddit of action judgment/execution layer."""
 
 from .engine import MarketingEngine
 

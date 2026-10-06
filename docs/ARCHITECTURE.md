@@ -1,245 +1,245 @@
-# 아키텍처
+# Architecture
 
-## 목차
+## Table of Contents
 
-1. [전체 구조](#전체-구조)
-2. [모듈 설명](#모듈-설명)
-3. [데이터 흐름](#데이터-흐름)
-4. [30일 스케줄 시스템](#30일-스케줄-시스템)
-5. [SQLite 스키마](#sqlite-스키마)
-
----
-
-## 전체 구조
-
-```
-main.py                            엔트리포인트
-  └── src/cli.py                    Click CLI 정의
-        ├── src/autopilot_browser.py  브라우저 자동화 오케스트레이터
-        │     ├── src/pi_browser.py         Reddit 브라우저 액션
-        │     │     └── src/pi_browser_client.py  WebSocket 서버
-        │     ├── src/marketing/engine.py   마케팅 엔진 (안전장치)
-        │     ├── src/schedule.py           30일 스케줄 생성
-        │     └── src/comment_generator.py  댓글 생성
-        ├── src/state.py             SQLite 상태 관리
-        └── src/display.py           Rich 터미널 UI
-```
-
-**의존성 방향:** `cli` → `autopilot_browser` → `pi_browser`, `marketing/engine`, `schedule`, `comment_generator` → `state`, `display`
+1. [System Overview](#system-overview)
+2. [Module descriptions](#module-descriptions)
+3. [Data Flow](#data-flow)
+4. [30-Day Scheduling System](#30-day-scheduling-system)
+5. [SQLite Schema](#sqlite-schema)
 
 ---
 
-## 모듈 설명
+## System Overview
+
+```
+main.py                            Entry point
+  └── src/cli.py                    Click CLI definition
+        ├── src/autopilot_browser.py  Browser automation orchestrator
+        │     ├── src/pi_browser.py         Reddit browser actions
+        │     │     └── src/pi_browser_client.py  WebSocket server
+        │     ├── src/marketing/engine.py   Marketing engine (safety guards)
+        │     ├── src/schedule.py           30-day schedule generation
+        │     └── src/comment_generator.py  Comment generation
+        ├── src/state.py             SQLite state management
+        └── src/display.py           Rich terminal UI
+```
+
+**Dependency direction:** `cli` → `autopilot_browser` → `pi_browser`, `marketing/engine`, `schedule`, `comment_generator` → `state`, `display`
+
+---
+
+## Module descriptions
 
 ### `main.py`
 
-엔트리포인트. `src.cli.cli()`를 호출합니다.
+Entry point that calls `src.cli.cli()`.
 
 ### `src/cli.py`
 
-Click 기반 CLI 정의.
+Click-based CLI definition.
 
-- `browser` — 브라우저 자동화 캠페인 실행
-- `campaign` — 캠페인 설정/조회/수정 (서브커맨드 그룹)
-- `report` — 일일 전략 리포트
-- `dashboard` — 터미널 대시보드
-- `influence` — 영향력 분석
-- `web` — 웹 대시보드 서버
+- `browser` — Run browser automation campaign
+- `campaign` — Configure/view/edit campaign (subcommand group)
+- `report` — Daily strategy report
+- `dashboard` — Terminal dashboard
+- `influence` — Influence analysis
+- `web` — Web dashboard server
 
 ### `src/autopilot_browser.py`
 
-브라우저 자동화 오케스트레이터. 30일 스케줄에 따라 태스크를 실행합니다.
+Browser automation orchestrator. Runs tasks according to the 30-day schedule.
 
-**`run_browser_campaign()` 함수 흐름:**
-1. WebSocket 서버 시작 (포트 9877)
-2. 크롬 확장프로그램 연결 대기
-3. Reddit 로그인 상태 확인
-4. 30일 스케줄 로드
-5. 다음 미완료 날짜의 태스크 실행
-6. 결과를 DB에 저장
+**`run_browser_campaign()` Function flow:**
+1. Start the WebSocket server (port 9877)
+2. Wait for the Chrome extension to connect
+3. Check Reddit login status
+4. Load the 30-day schedule
+5. Run tasks for the next incomplete day
+6. Save results to the database
 
-**태스크 실행 함수:**
-- `_exec_karma()` — 카르마 빌딩: r/{sub}/hot → 글 선택 → 도움 댓글
-- `_exec_seed()` — 씨뿌리기: r/{sub}/search → 관련 글 → 자연스러운 제품 언급
-- `_exec_post()` — 포스트: r/{sub}/submit → 제목/본문 입력 → 게시
-- `_exec_monitor()` — 기존 포스트 새 댓글 확인
+**Task execution functions:**
+- `_exec_karma()` — Karma-building: r/{sub}/hot → select a post → helpful comment
+- `_exec_seed()` — seeding: r/{sub}/search → relevant post → natural product mention
+- `_exec_post()` — Post: r/{sub}/submit → enter a title/body → publish
+- `_exec_monitor()` — Check new comments on existing posts
 
 ### `src/pi_browser_client.py`
 
-WebSocket 서버. 크롬 확장프로그램과 통신합니다.
+WebSocket server. Communicates with the Chrome extension.
 
-- **포트:** 9877
-- **프로토콜:** JSON 메시지 (id, command, params → id, result/error)
-- Python에서 명령 전송 → 확장프로그램이 실행 → 결과 반환
-- `threading.Event`로 동기적 요청/응답 처리
+- **Port:** 9877
+- **Protocol:** JSON messages (id, command, params → id, result/error)
+- Sends commands from Python → extension executes → returns results
+- `threading.Event` for synchronous request/response handling
 
-**주요 명령:**
-- `navigate` — URL 이동
-- `click`, `clickCoords` — 요소/좌표 클릭
-- `fill`, `typeText` — 텍스트 입력 (CDP 기반)
-- `evaluate` — JavaScript 실행
-- `snapshot` — 페이지 인터랙티브 요소 목록
-- `redditSubmitPost` — Reddit 포스트 작성
-- `redditComment` — Reddit 댓글 작성
-- `redditCheckLogin` — 로그인 상태 확인
+**Key commands:**
+- `navigate` — Navigate to URL
+- `click`, `clickCoords` — Click element/coordinates
+- `fill`, `typeText` — Enter text (based on CDP)
+- `evaluate` — Run JavaScript
+- `snapshot` — List of interactive page elements
+- `redditSubmitPost` — Create a Reddit post
+- `redditComment` — Write a Reddit comment
+- `redditCheckLogin` — Check the login status status
 
 ### `src/pi_browser.py`
 
-Reddit 전용 브라우저 액션 래퍼.
+Reddit-specific browser action wrapper.
 
-**댓글 작성 3단계 폴백:**
-1. JS 삽입으로 댓글 입력 + 제출
-2. CDP typeText로 재시도
-3. 페이지 새로고침 후 전체 재시도
+**Three-step comment fallback:**
+1. Inject JavaScript to enter and submit the comment
+2. Retry with CDP typeText
+3. Refresh the page and retry everything
 
-**주요 메서드:**
-- `post_comment()` — 댓글 작성 (3단계 폴백)
-- `submit_post()` — 포스트 작성
-- `check_login()` — 로그인 확인
-- `verify_comment()` — 댓글 작성 성공 확인
+**Key methods:**
+- `post_comment()` — Write a comment (three-step fallback)
+- `submit_post()` — Create a post
+- `check_login()` — Check the login status
+- `verify_comment()` — Verify successful comment submission
 
 ### `src/marketing/engine.py`
 
-마케팅 엔진. 매 액션 전 안전 검사를 수행합니다.
+Marketing engine. Runs safety checks before every action.
 
-**프리플라이트 체크:**
-- 계정 건강도 (업보트/다운보트 비율)
-- 타이밍 등급 (optimal/good/acceptable/poor/avoid)
-- 일일 한도 (포스트 2개/일, 댓글 8개/일)
-- 서브레딧별 규칙 확인
+**Preflight checks:**
+- Account health (upvote/downvote ratio)
+- Timing rating (optimal/good/acceptable/poor/avoid)
+- Daily limits (2 posts/day, 8 comments/day)
+- Check subreddit-specific rules
 
 ### `src/schedule.py`
 
-30일 스케줄을 자동 생성합니다.
+Generates the 30-day schedule automatically.
 
-**4단계 구성:**
-- Phase 1 (Day 1~8): 카르마 빌딩만
-- Phase 2 (Day 9~15): 카르마 + 씨뿌리기
-- Phase 3 (Day 16~22): 씨뿌리기 + 포스트
-- Phase 4 (Day 23~30): 전체 캠페인
+**Four phases:**
+- Phase 1 (Days 1–8): Karma-building only
+- Phase 2 (Days 9–15): Karma + seeding
+- Phase 3 (Days 16–22): Seeding + posts
+- Phase 4 (Days 23–30): Full campaign
 
-campaign.toml의 타겟 서브레딧/키워드를 기반으로 각 날짜의 태스크를 배정합니다.
+Assigns each day’s tasks based on the target subreddits and keywords in campaign.toml.
 
 ### `src/comment_generator.py`
 
-AI 기반 댓글 생성.
+AI based on Comment generation.
 
-- `generate_karma_comment()` — 도움이 되는 전문가 톤 댓글
-- `generate_seed_comment()` — 자연스러운 제품 언급 댓글
-- `generate_post_title()` / `generate_post_body()` — 포스트 생성
+- `generate_karma_comment()` — Helpful expert-tone comment
+- `generate_seed_comment()` — Natural product-mention comment
+- `generate_post_title()` / `generate_post_body()` — Post generation
 
 ### `src/state.py`
 
-SQLite 데이터베이스를 통한 상태 관리.
+State management through SQLite.
 
-- 첫 실행 시 자동으로 DB 파일과 테이블 생성
-- 각 테이블별 CRUD 메서드 제공
-- `ON CONFLICT` 구문으로 중복 키 처리
+- Creates the database file and tables automatically on first run
+- Provides CRUD methods for each table
+- `ON CONFLICT` using the syntax duplicate-key handling
 
 ### `src/display.py`
 
-Rich 라이브러리를 활용한 터미널 UI.
+Terminal UI powered by Rich.
 
 ### `extension/background.js`
 
-크롬 확장프로그램의 Service Worker.
+Service Worker for the Chrome extension.
 
-- `ws://localhost:9877`에 WebSocket 클라이언트로 연결
-- Python에서 받은 명령을 Chrome DevTools Protocol (CDP) 또는 DOM 조작으로 실행
-- Reddit 특화 핸들러: 포스트 작성, 댓글 작성, 로그인 확인 등
+- `ws://localhost:9877`Connects as a WebSocket client to
+- Executes commands received from Python through the Chrome DevTools Protocol (CDP) or DOM manipulation
+- Reddit-specific handlers: create posts, write comments, check login, and more
 
 ---
 
-## 데이터 흐름
+## Data Flow
 
-### browser 커맨드
+### browser command
 
 ```
 [campaign.toml]
     ↓ schedule.py
-[30일 스케줄]
-    ↓ autopilot_browser.py (오케스트레이션)
-    ├──→ marketing/engine.py (프리플라이트 체크)
-    ├──→ comment_generator.py (댓글 생성)
-    ├──→ pi_browser.py (브라우저 액션)
+[30-day schedule]
+    ↓ autopilot_browser.py (orchestration)
+    ├──→ marketing/engine.py (Preflight checks)
+    ├──→ comment_generator.py (Comment generation)
+    ├──→ pi_browser.py (browser actions)
     │       ↓ pi_browser_client.py (WebSocket)
     │       ↓ extension/background.js (CDP/DOM)
-    │       ↓ Reddit 웹사이트
-    └──→ state.py (DB 저장)
+    │       ↓ Reddit website
+    └──→ state.py (database storage)
            ↓
-    [SQLite DB] ←──→ [display.py → 터미널 출력]
+    [SQLite DB] ←──→ [display.py → terminal output]
 ```
 
 ---
 
-## 30일 스케줄 시스템
+## 30-Day Scheduling System
 
-### 태스크 유형 (TaskType)
+### Task types (TaskType)
 
-| 값 | 설명 |
+| Value | Description |
 |----|------|
-| `KARMA_COMMENT` | 카르마 빌딩 댓글 (앱 언급 없음) |
-| `SEED_COMMENT` | 씨뿌리기 댓글 (자연스러운 제품 언급) |
-| `POST` | 서브레딧에 포스트 게시 |
-| `MONITOR` | 기존 포스트 댓글 확인 |
-| `REST` | 휴식 |
-| `REVIEW` | 복기 + 메트릭 수집 |
+| `KARMA_COMMENT` | Karma-building comment (no app mention) |
+| `SEED_COMMENT` | Seeding comment (natural product mention) |
+| `POST` | Publish a post to a subreddit |
+| `MONITOR` | Check comments on existing posts |
+| `REST` | Rest |
+| `REVIEW` | Review + collect metrics |
 
-### 커스텀 스케줄
+### Custom schedule
 
-DB에 커스텀 스케줄을 저장하여 자동 생성 스케줄을 오버라이드할 수 있습니다.
+Save a custom schedule in the database to override the generated schedule.
 
 ```bash
-# 특정 날짜 수정
+# Edit a specific day
 python main.py campaign edit-day 5 --clear-tasks --add-karma commandline:terminal,cli
 
-# 자동 생성으로 복원
+# Restore the generated schedule
 python main.py campaign edit-day 5 --revert
 ```
 
 ---
 
-## SQLite 스키마
+## SQLite Schema
 
 ### campaign_state
 
-| 컬럼 | 타입 | 설명 |
+| Column | Type | Description |
 |------|------|------|
-| `day_id` | TEXT PK | 날짜 ID (예: `day-01`) |
+| `day_id` | TEXT PK | Day ID (e.g., `day-01`) |
 | `status` | TEXT | `pending`, `in_progress`, `completed`, `error` |
-| `started_at` | TEXT | 실행 시작 시간 (ISO 8601) |
-| `completed_at` | TEXT | 완료 시간 (ISO 8601) |
+| `started_at` | TEXT | Start time (ISO 8601) |
+| `completed_at` | TEXT | Completion time (ISO 8601) |
 
 ### submissions
 
-| 컬럼 | 타입 | 설명 |
+| Column | Type | Description |
 |------|------|------|
-| `id` | INTEGER PK | 자동 증가 |
-| `day_id` | TEXT | 날짜 ID |
+| `id` | INTEGER PK | Auto-increment |
+| `day_id` | TEXT | Day ID |
 | `reddit_id` | TEXT | Reddit submission ID |
-| `subreddit` | TEXT | 서브레딧명 |
-| `title` | TEXT | 포스트 제목 |
-| `url` | TEXT | 포스트 URL |
-| `posted_at` | TEXT | 게시 시간 (ISO 8601) |
+| `subreddit` | TEXT | Subreddit name |
+| `title` | TEXT | Post title |
+| `url` | TEXT | Post URL |
+| `posted_at` | TEXT | Posting time (ISO 8601) |
 
 ### comments
 
-| 컬럼 | 타입 | 설명 |
+| Column | Type | Description |
 |------|------|------|
-| `id` | INTEGER PK | 자동 증가 |
+| `id` | INTEGER PK | Auto-increment |
 | `reddit_id` | TEXT | Reddit comment ID |
-| `submission_id` | TEXT | 대상 submission ID |
-| `subreddit` | TEXT | 서브레딧명 |
-| `body` | TEXT | 댓글 내용 |
+| `submission_id` | TEXT | Target submission ID |
+| `subreddit` | TEXT | Subreddit name |
+| `body` | TEXT | Comment body |
 | `comment_type` | TEXT | `karma_build`, `seeding`, `reply`, `auto_reply` |
-| `created_at` | TEXT | 작성 시간 (ISO 8601) |
+| `created_at` | TEXT | Creation time (ISO 8601) |
 
 ### metrics
 
-| 컬럼 | 타입 | 설명 |
+| Column | Type | Description |
 |------|------|------|
-| `id` | INTEGER PK | 자동 증가 |
+| `id` | INTEGER PK | Auto-increment |
 | `submission_id` | TEXT | Reddit submission ID |
-| `upvotes` | INTEGER | 업보트 수 |
-| `comment_count` | INTEGER | 댓글 수 |
-| `recorded_at` | TEXT | 수집 시간 (ISO 8601) |
+| `upvotes` | INTEGER | Upvote count |
+| `comment_count` | INTEGER | Comment count |
+| `recorded_at` | TEXT | Recorded time (ISO 8601) |

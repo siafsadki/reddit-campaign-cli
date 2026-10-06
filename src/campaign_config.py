@@ -1,6 +1,6 @@
-"""캠페인 설정 파일 (campaign.toml) 로더.
+"""campaign setting file (campaign.toml) loader.
 
-범용 Reddit 마케팅 자동화 — config 하나로 어떤 제품이든 캠페인 실행.
+universal Reddit marketing automation — config As one which product or not campaign execution.
 """
 
 from __future__ import annotations
@@ -61,10 +61,10 @@ class CampaignConfig:
 
 
 def load_campaign(path: str | None = None) -> CampaignConfig:
-    """campaign.toml 로드."""
+    """campaign.toml load."""
     p = Path(path or CAMPAIGN_FILE)
     if not p.exists():
-        raise FileNotFoundError(f"캠페인 설정 파일 없음: {p}")
+        raise FileNotFoundError(f"campaign setting file doesn't exist: {p}")
 
     with open(p, "rb") as f:
         data = tomllib.load(f)
@@ -130,7 +130,7 @@ def load_campaign(path: str | None = None) -> CampaignConfig:
 
 
 def save_campaign(cfg: CampaignConfig, path: str | None = None):
-    """CampaignConfig를 TOML 형식으로 저장."""
+    """CampaignConfigcast TOML in format save."""
     p = Path(path or CAMPAIGN_FILE)
 
     lines = [
@@ -187,12 +187,12 @@ def save_campaign(cfg: CampaignConfig, path: str | None = None):
 
 
 def campaign_exists(path: str | None = None) -> bool:
-    """캠페인 설정 파일 존재 여부."""
+    """campaign setting file existence Whether."""
     return Path(path or CAMPAIGN_FILE).exists()
 
 
 def to_dict(cfg: CampaignConfig) -> dict:
-    """CampaignConfig를 JSON-safe dict로 변환."""
+    """CampaignConfigcast JSON-safe dictas conversion."""
     return {
         "product": {
             "name": cfg.product_name,

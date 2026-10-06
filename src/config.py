@@ -1,4 +1,4 @@
-"""TOML + env 설정 로딩."""
+"""TOML + env setting loading."""
 
 from __future__ import annotations
 

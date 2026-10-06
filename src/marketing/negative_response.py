@@ -1,4 +1,4 @@
-"""부정 댓글 대응 전략."""
+"""negative comment react strategy."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ from enum import Enum
 
 
 class Severity(Enum):
-    TRIVIAL = "trivial"           # "별로" — 무시
-    CONSTRUCTIVE = "constructive"  # "X가 더 나은데" — 인정 + 로드맵
-    HOSTILE = "hostile"            # "쓰레기" — 1회 팩트 정정
-    ATTACK = "attack"             # 인신공격 — 무시
-    VIRAL_NEGATIVE = "viral"       # 고upvote 비판 — 신중 대응
+    TRIVIAL = "trivial"           # "not really" — ignore
+    CONSTRUCTIVE = "constructive"  # "Xgo more It's better" — admit + roadmap
+    HOSTILE = "hostile"            # "trash" — 1episode fact correction
+    ATTACK = "attack"             # personal attack — ignore
+    VIRAL_NEGATIVE = "viral"       # goupvote criticism — discretion react
 
 
 class ResponseAction(Enum):
     IGNORE = "ignore"
     RESPOND_ONCE = "respond_once"
     ACKNOWLEDGE = "acknowledge"
-    ESCALATE = "escalate"         # 수동 검토 필요
+    ESCALATE = "escalate"         # passivity examine necessary
 
 
 @dataclass
@@ -29,7 +29,7 @@ class NegativeAnalysis:
     suggested_response: str | None = None
 
 
-# 키워드 기반 분류
+# keyword based classification
 HOSTILE_KEYWORDS = [
     "garbage", "trash", "crap", "sucks", "terrible", "awful",
     "waste", "scam", "bloat", "bloated", "useless",
@@ -46,7 +46,7 @@ CONSTRUCTIVE_PATTERNS = [
     "have you considered", "what about",
 ]
 
-# 대응 템플릿
+# react template
 TEMPLATES = {
     Severity.CONSTRUCTIVE: [
         "that's a fair point. {topic} is something I've been thinking about — it's on the list but haven't gotten to it yet",
@@ -65,65 +65,65 @@ def analyze_negative(
     score: int = 0,
     upvotes: int = 0,
 ) -> NegativeAnalysis:
-    """부정 댓글 분석 + 대응 전략 결정."""
+    """negative comment analyze + react strategy decision."""
     body_lower = body.lower()
 
-    # 인신공격 감지
+    # personal attack detect
     attack_count = sum(1 for kw in ATTACK_KEYWORDS if kw in body_lower)
     if attack_count >= 1:
         return NegativeAnalysis(
             severity=Severity.ATTACK,
             action=ResponseAction.IGNORE,
-            reason=f"인신공격 감지 ({attack_count}개 키워드)",
+            reason=f"personal attack detect ({attack_count}dog keyword)",
         )
 
-    # 바이럴 네거티브 (고upvote 비판)
+    # viral negative (goupvote criticism)
     hostile_count = sum(1 for kw in HOSTILE_KEYWORDS if kw in body_lower)
     if hostile_count >= 1 and upvotes >= 20:
         return NegativeAnalysis(
             severity=Severity.VIRAL_NEGATIVE,
             action=ResponseAction.ESCALATE,
-            reason=f"고upvote({upvotes}) 비판 — 신중 대응 필요",
+            reason=f"goupvote({upvotes}) criticism — discretion react necessary",
         )
 
-    # 적대적
+    # hostile
     if hostile_count >= 2:
         return NegativeAnalysis(
             severity=Severity.HOSTILE,
             action=ResponseAction.RESPOND_ONCE,
-            reason=f"적대적 표현 {hostile_count}개",
+            reason=f"hostile expression {hostile_count}dog",
             suggested_response=TEMPLATES[Severity.HOSTILE][0],
         )
 
-    # 건설적 비판
+    # constructive criticism
     constructive_count = sum(1 for p in CONSTRUCTIVE_PATTERNS if p in body_lower)
     if constructive_count >= 1 or (hostile_count <= 1 and len(body) > 50):
         return NegativeAnalysis(
             severity=Severity.CONSTRUCTIVE,
             action=ResponseAction.ACKNOWLEDGE,
-            reason="건설적 비판 — 인정 + 답변",
+            reason="constructive criticism — admit + answer",
             suggested_response=TEMPLATES[Severity.CONSTRUCTIVE][0],
         )
 
-    # 사소한 부정
+    # minute negative
     return NegativeAnalysis(
         severity=Severity.TRIVIAL,
         action=ResponseAction.IGNORE,
-        reason="사소한 부정 — 무시",
+        reason="minute negative — ignore",
     )
 
 
 def should_respond(analysis: NegativeAnalysis) -> bool:
-    """응답해야 하는지."""
+    """have to respond Do you do it?."""
     return analysis.action in (ResponseAction.RESPOND_ONCE, ResponseAction.ACKNOWLEDGE)
 
 
 def get_escalation_status(negative_ratio: float, total_comments: int) -> str:
-    """포스트 전체 부정 비율 체크."""
+    """post entire negative ratio check."""
     if total_comments < 5:
         return "insufficient_data"
     if negative_ratio > 0.4:
-        return "critical"  # 40% 이상 부정 — 수동 검토
+        return "critical"  # 40% more negative — passivity examine
     if negative_ratio > 0.2:
-        return "warning"   # 20% 이상 — 주의
+        return "warning"   # 20% more — caution
     return "normal"

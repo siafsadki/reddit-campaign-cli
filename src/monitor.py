@@ -1,4 +1,4 @@
-"""댓글 모니터링 + Q&A 자동응답 + 지속 모니터링 + 로그 문서화."""
+"""comment monitoring + Q&A automatic response + continue monitoring + log documentation."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .parser import QAPair
 from .reddit_client import RedditClient
 from .state import StateDB
 
-# 댓글 감정/유형 분류 키워드
+# comment emotion/category classification keyword
 SENTIMENT_KEYWORDS = {
     "positive": [
         "cool", "awesome", "nice", "great", "love", "amazing", "thanks",
@@ -38,7 +38,7 @@ SENTIMENT_KEYWORDS = {
     ],
 }
 
-# 중요 토픽 감지
+# importance topic detect
 TOPIC_KEYWORDS = {
     "linux": ["linux", "ubuntu", "fedora", "arch", "debian", "wayland", "x11"],
     "open_source": ["open source", "closed source", "license", "foss", "gpl", "mit license"],
@@ -55,7 +55,7 @@ def check_new_comments(
     dry_run: bool = False,
     auto_confirm: bool = False,
 ) -> list[dict]:
-    """모든 기존 포스트의 새 댓글 확인 + Q&A 매칭."""
+    """every existing of the post bird comment check + Q&A matching."""
     results = []
     submissions = db.get_submissions()
     replied_ids = db.get_replied_comment_ids()
@@ -80,14 +80,14 @@ def check_new_comments(
 
         new_comments = []
         for c in comments:
-            # 자기 댓글 스킵
+            # self comment skip
             if hasattr(c, "author") and c.author and c.author.name.lower() == my_username:
                 continue
-            # 이미 답한 댓글 스킵
+            # already answered comment skip
             if c.id in replied_ids:
                 continue
 
-            # 댓글 분석
+            # comment analyze
             sentiment = _classify_sentiment(c.body)
             topics = _detect_topics(c.body)
             priority = _calculate_priority(sentiment, topics, c)
@@ -104,7 +104,7 @@ def check_new_comments(
                 "suggested_reply": None,
             }
 
-            # Q&A 매칭
+            # Q&A matching
             if qa_pairs:
                 match = _match_qa(c.body, qa_pairs)
                 if match:
@@ -113,7 +113,7 @@ def check_new_comments(
 
             new_comments.append(comment_data)
 
-        # 우선순위 정렬: 높은 것부터
+        # priority array: high From things
         new_comments.sort(key=lambda x: x["priority"], reverse=True)
 
         if new_comments:
@@ -128,7 +128,7 @@ def check_new_comments(
 
         db.update_comment_check(reddit_id)
 
-    # 자동응답 처리
+    # automatic response treatment
     if not dry_run and results:
         _handle_auto_replies(client, db, results, auto_confirm)
 
@@ -143,7 +143,7 @@ def run_continuous_monitor(
     log_dir: str = "data/monitor-logs",
     auto_confirm: bool = False,
 ):
-    """지속 모니터링 루프. interval초마다 새 댓글 확인 + 로그 기록."""
+    """continue monitoring loop. intervalevery second bird comment check + log record."""
     Path(log_dir).mkdir(parents=True, exist_ok=True)
 
     show_info(f"Starting continuous monitor (interval: {interval}s)")
@@ -162,7 +162,7 @@ def run_continuous_monitor(
                 auto_confirm=auto_confirm,
             )
 
-            # 결과 로그 기록
+            # result log record
             if results:
                 _write_monitor_log(results, log_dir, now)
                 _update_monitor_report(results, log_dir, now)
@@ -184,7 +184,7 @@ def run_continuous_monitor(
 
 
 def _classify_sentiment(body: str) -> str:
-    """댓글 감정 분류."""
+    """comment emotion classification."""
     body_lower = body.lower()
     scores = {}
     for sentiment, keywords in SENTIMENT_KEYWORDS.items():
@@ -197,7 +197,7 @@ def _classify_sentiment(body: str) -> str:
 
 
 def _detect_topics(body: str) -> list[str]:
-    """댓글에서 중요 토픽 감지."""
+    """In the comments importance topic detect."""
     body_lower = body.lower()
     detected = []
     for topic, keywords in TOPIC_KEYWORDS.items():
@@ -207,34 +207,34 @@ def _detect_topics(body: str) -> list[str]:
 
 
 def _calculate_priority(sentiment: str, topics: list[str], comment) -> int:
-    """댓글 응답 우선순위 계산 (높을수록 시급)."""
+    """comment response priority calculate (The higher it is hourly rate)."""
     score = 0
 
-    # 질문은 답변 필수
+    # The question is answer essential
     if sentiment == "question":
         score += 30
-    # 부정적 댓글은 빠른 대응 필요
+    # negative The comment is fast react necessary
     elif sentiment == "negative":
         score += 25
-    # 기능 요청은 중요
+    # function The request is importance
     elif sentiment == "feature_request":
         score += 20
-    # 비교 질문은 기회
+    # comparison The question is opportunity
     elif sentiment == "comparison":
         score += 15
-    # 긍정은 감사 표시
+    # Positivity is thanks mark
     elif sentiment == "positive":
         score += 5
 
-    # 핫 토픽 가점
+    # hot topic Extra points
     if "linux" in topics:
-        score += 10  # 자주 나오는 질문
+        score += 10  # often coming out question
     if "security" in topics:
-        score += 10  # 빠른 대응 필요
+        score += 10  # fast react necessary
     if "open_source" in topics:
         score += 5
 
-    # 업보트 높은 댓글 우선
+    # Upvote high comment first of all
     comment_score = getattr(comment, "score", 0)
     if comment_score >= 10:
         score += 15
@@ -247,18 +247,18 @@ def _calculate_priority(sentiment: str, topics: list[str], comment) -> int:
 
 
 def _match_qa(comment_body: str, qa_pairs: list[QAPair]) -> QAPair | None:
-    """댓글 내용과 Q&A 키워드 매칭."""
+    """comment content and Q&A keyword matching."""
     body_lower = comment_body.lower()
     best_match = None
     best_score = 0
 
     for qa in qa_pairs:
         keywords = qa.question.lower().split()
-        # 불용어 제거
+        # stop words eliminate
         stopwords = {"a", "the", "is", "it", "not", "just", "i", "you", "do", "does"}
         meaningful = [kw for kw in keywords if kw not in stopwords and len(kw) > 2]
         score = sum(1 for kw in meaningful if kw in body_lower)
-        # 최소 2개 의미있는 키워드 매칭 필요
+        # minimum 2dog meaningful keyword matching necessary
         if score >= 2 and score > best_score:
             best_score = score
             best_match = qa
@@ -272,7 +272,7 @@ def _handle_auto_replies(
     results: list[dict],
     auto_confirm: bool,
 ):
-    """매칭된 Q&A에 대해 자동응답."""
+    """matched Q&Ato about automatic response."""
     for r in results:
         for c in r.get("new_comments", []):
             if not c.get("suggested_reply"):
@@ -303,7 +303,7 @@ def _handle_auto_replies(
 
 
 def _write_monitor_log(results: list[dict], log_dir: str, now: datetime):
-    """각 모니터링 사이클의 원시 로그를 JSONL로 기록."""
+    """each monitoring cycle farsighted log JSONLas record."""
     log_path = Path(log_dir) / f"raw-{now.strftime('%Y-%m-%d')}.jsonl"
     with open(log_path, "a", encoding="utf-8") as f:
         for r in results:
@@ -326,16 +326,16 @@ def _write_monitor_log(results: list[dict], log_dir: str, now: datetime):
 
 
 def _update_monitor_report(results: list[dict], log_dir: str, now: datetime):
-    """일별 모니터링 리포트 마크다운 파일을 업데이트."""
+    """glance monitoring report markdown file update."""
     report_path = Path(log_dir) / f"report-{now.strftime('%Y-%m-%d')}.md"
 
-    # 기존 리포트 로딩 또는 새로 생성
+    # existing report loading or new generation
     if report_path.exists():
         existing = report_path.read_text(encoding="utf-8")
     else:
         existing = f"# Monitor Report — {now.strftime('%Y-%m-%d')}\n\n"
 
-    # 새 섹션 추가
+    # bird section addition
     section = f"\n## {now.strftime('%H:%M:%S')} Check\n\n"
 
     for r in results:
@@ -346,34 +346,34 @@ def _update_monitor_report(results: list[dict], log_dir: str, now: datetime):
         section += f"### {r['subreddit']} — {r['title'][:50]}\n\n"
         section += f"New comments: {len(new_comments)} | Total: {r.get('total_comments', '?')}\n\n"
 
-        # 감정 분포
+        # emotion distribution
         sentiments = {}
         for c in new_comments:
             s = c["sentiment"]
             sentiments[s] = sentiments.get(s, 0) + 1
         section += f"Sentiment: {', '.join(f'{k}={v}' for k, v in sorted(sentiments.items()))}\n\n"
 
-        # 감지된 토픽
+        # detected topic
         all_topics = set()
         for c in new_comments:
             all_topics.update(c["topics"])
         if all_topics:
             section += f"Topics: {', '.join(sorted(all_topics))}\n\n"
 
-        # 주요 댓글 (우선순위 상위)
+        # main comment (priority difference)
         section += "| Priority | Author | Sentiment | Comment |\n"
         section += "|----------|--------|-----------|---------|\n"
-        for c in new_comments[:10]:  # 상위 10개만
+        for c in new_comments[:10]:  # difference 10Just a dog
             body_short = c["body"][:60].replace("|", "/").replace("\n", " ")
             section += f"| {c['priority']} | u/{c['author']} | {c['sentiment']} | {body_short} |\n"
         section += "\n"
 
-    # 리포트에 추가
+    # In the report addition
     report_path.write_text(existing + section, encoding="utf-8")
 
 
 def generate_daily_summary(log_dir: str = "data/monitor-logs", date_str: str | None = None):
-    """일별 모니터링 로그에서 종합 요약을 생성."""
+    """glance monitoring from log synthesis Summary generation."""
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -392,7 +392,7 @@ def generate_daily_summary(log_dir: str = "data/monitor-logs", date_str: str | N
         show_info(f"No entries for {date_str}")
         return
 
-    # 통계 집계
+    # statistics tally
     total = len(entries)
     by_subreddit = {}
     by_sentiment = {}
@@ -412,7 +412,7 @@ def generate_daily_summary(log_dir: str = "data/monitor-logs", date_str: str | N
         if e.get("priority", 0) >= 25:
             high_priority.append(e)
 
-    # 요약 마크다운 생성
+    # summation markdown generation
     summary_path = Path(log_dir) / f"summary-{date_str}.md"
     lines = [
         f"# Daily Summary — {date_str}\n",

@@ -1,7 +1,7 @@
 [project]
 name = "redit-market"
 version = "0.1.0"
-description = "Reddit 30-Day Campaign CLI — 브라우저 자동화"
+description = "Reddit 30-Day Campaign CLI — browser automation"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.1",

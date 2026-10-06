@@ -1,4 +1,4 @@
-"""SQLite 상태 관리."""
+"""SQLite state management."""
 
 from __future__ import annotations
 
@@ -375,7 +375,7 @@ class StateDB:
     # --- activity summary ---
 
     def get_activity_summary(self, date: str | None = None) -> dict:
-        """날짜별 활동 요약."""
+        """By date activity summation."""
         date_filter = f" WHERE created_at LIKE '{date}%'" if date else ""
         date_filter_b = f" WHERE browsed_at LIKE '{date}%'" if date else ""
         date_filter_p = f" WHERE posted_at LIKE '{date}%'" if date else ""
@@ -447,10 +447,10 @@ class StateDB:
         self.conn.execute("DELETE FROM custom_schedule WHERE day = ?", (day,))
         self.conn.commit()
 
-    # --- campaign config (캠페인별 격리) ---
+    # --- campaign config (By campaign isolation) ---
 
     def has_commented_on(self, submission_id: str) -> bool:
-        """이 포스트에 이미 댓글을 달았는지 확인."""
+        """this in the post already Leave a comment Is it sweet? check."""
         row = self.conn.execute(
             "SELECT COUNT(*) as cnt FROM comments WHERE submission_id = ?",
             (submission_id,),
@@ -458,7 +458,7 @@ class StateDB:
         return row["cnt"] > 0
 
     def has_posted_to(self, subreddit: str, days: int = 7) -> bool:
-        """최근 N일 내 이 서브레딧에 포스트했는지 확인."""
+        """recent NDay my this On the subreddit Did you post it? check."""
         row = self.conn.execute(
             """SELECT COUNT(*) as cnt FROM submissions
                WHERE subreddit = ? AND posted_at >= datetime('now', ?)""",
@@ -467,7 +467,7 @@ class StateDB:
         return row["cnt"] > 0
 
     def get_today_action_count(self, action_type: str) -> int:
-        """오늘 특정 타입의 액션 수."""
+        """today specific type of action number."""
         today = datetime.now().strftime("%Y-%m-%d")
         row = self.conn.execute(
             "SELECT COUNT(*) as cnt FROM comments WHERE comment_type = ? AND created_at LIKE ?",
@@ -476,7 +476,7 @@ class StateDB:
         return row["cnt"]
 
     def get_today_post_count(self) -> int:
-        """오늘 포스트 수."""
+        """today post number."""
         today = datetime.now().strftime("%Y-%m-%d")
         row = self.conn.execute(
             "SELECT COUNT(*) as cnt FROM submissions WHERE posted_at LIKE ?",
@@ -485,14 +485,14 @@ class StateDB:
         return row["cnt"]
 
     def get_commented_submission_ids(self) -> set[str]:
-        """댓글 작성한 모든 submission_id."""
+        """comment written every submission_id."""
         rows = self.conn.execute(
             "SELECT DISTINCT submission_id FROM comments WHERE submission_id IS NOT NULL"
         ).fetchall()
         return {r["submission_id"] for r in rows}
 
     def get_posted_subreddits(self, days: int = 30) -> set[str]:
-        """최근 N일 내 포스트한 서브레딧."""
+        """recent NDay my Posted subreddit."""
         rows = self.conn.execute(
             """SELECT DISTINCT subreddit FROM submissions
                WHERE posted_at >= datetime('now', ?)""",

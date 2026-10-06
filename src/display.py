@@ -1,4 +1,4 @@
-"""Rich 터미널 UI."""
+"""Rich terminal UI."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ console = Console()
 
 
 def show_day_plan(plan: DayPlan):
-    """DayPlan 미리보기 출력."""
+    """DayPlan Preview output of power."""
     type_colors = {
         DayType.PREP: "cyan",
         DayType.POST: "green",
@@ -72,7 +72,7 @@ def show_day_plan(plan: DayPlan):
 
 
 def show_status_dashboard(statuses: list[dict], submissions: list[dict]):
-    """캠페인 진행 현황 대시보드."""
+    """campaign progress current situation dashboard."""
     console.print()
     console.print(Panel("[bold]Campaign Status Dashboard[/bold]", style="blue", width=70))
 
@@ -116,7 +116,7 @@ def show_status_dashboard(statuses: list[dict], submissions: list[dict]):
 
 
 def show_metrics_report(metrics: list[dict], submissions: list[dict]):
-    """메트릭 리포트 출력."""
+    """metric report output of power."""
     console.print()
     console.print(Panel("[bold]Metrics Report[/bold]", style="magenta", width=70))
 
@@ -154,7 +154,7 @@ def show_metrics_report(metrics: list[dict], submissions: list[dict]):
 
 
 def show_monitor_results(results: list[dict]):
-    """모니터링 결과 출력."""
+    """monitoring result output of power."""
     console.print()
     console.print(Panel("[bold]Comment Monitor[/bold]", style="yellow", width=80))
 
@@ -173,7 +173,7 @@ def show_monitor_results(results: list[dict]):
             f"({len(new_comments)} new)"
         )
 
-        # 감정 분포 요약
+        # emotion distribution summation
         sentiments = {}
         for c in new_comments:
             s = c.get("sentiment", "neutral")
@@ -181,7 +181,7 @@ def show_monitor_results(results: list[dict]):
         sentiment_str = " | ".join(f"{k}: {v}" for k, v in sorted(sentiments.items()))
         console.print(f"    Sentiment: {sentiment_str}")
 
-        # 핫 토픽
+        # hot topic
         all_topics = set()
         for c in new_comments:
             all_topics.update(c.get("topics", []))
@@ -196,7 +196,7 @@ def show_monitor_results(results: list[dict]):
             priority = c.get("priority", 0)
             sentiment = c.get("sentiment", "?")
 
-            # 우선순위 색상
+            # priority color
             if priority >= 25:
                 p_color = "red"
                 p_label = "HIGH"
@@ -220,7 +220,7 @@ def show_monitor_results(results: list[dict]):
 
 
 def confirm_action(message: str) -> bool:
-    """사용자 확인 프롬프트."""
+    """user check prompt."""
     return console.input(f"\n  {message} [y/N]: ").strip().lower() in ("y", "yes")
 
 

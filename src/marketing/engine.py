@@ -1,6 +1,6 @@
-"""마케팅 엔진 — 모든 판단의 중심.
+"""marketing engine — every of judgment center.
 
-클로드 코드가 이 엔진을 통해 모든 Reddit 액션을 제어.
+Claude the code this the engine through every Reddit action control.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ class ActionType(Enum):
     COMMENT = "comment"
     SEEDING = "seeding"
     REPLY = "reply"
-    KARMA_BUILD = "karma_build"  # 카르마 빌딩 (앱 언급 없이)
+    KARMA_BUILD = "karma_build"  # karma building (app mention without)
 
 
 @dataclass
@@ -51,17 +51,17 @@ class PreFlightResult:
     warnings: list[str] = field(default_factory=list)
     blocks: list[str] = field(default_factory=list)
     suggested_delay: float = 0
-    varied_body: str = ""  # 변형된 본문
+    varied_body: str = ""  # transformed text
 
 
-# 카르마 빌딩에 좋은 서브레딧 (앱 관련 + 일반)
+# karma in the building good subreddit (app related + common)
 KARMA_SUBS = [
     "commandline", "programming", "rust", "webdev",
     "vim", "neovim", "linux", "opensource",
     "python", "golang", "devops",
 ]
 
-# 카르마 빌딩 검색 키워드
+# karma building search keyword
 KARMA_TOPICS = {
     "commandline": ["terminal workflow", "cli tools", "shell setup"],
     "programming": ["developer tools", "IDE setup", "productivity"],
@@ -75,51 +75,51 @@ KARMA_TOPICS = {
 
 
 class MarketingEngine:
-    """마케팅 판단 엔진."""
+    """marketing judgment engine."""
 
     def __init__(self, db: StateDB):
         self.db = db
 
     def pre_flight_check(self, action: Action) -> PreFlightResult:
-        """액션 실행 전 전체 체크. 클로드 코드가 이 결과를 보고 판단."""
+        """action execution jeon entire check. Claude the code this the result report judgment."""
         warnings = []
         blocks = []
 
-        # 1. 계정 건강도
+        # 1. account health
         health = check_health(self.db)
         if not health.can_proceed:
-            blocks.append(f"계정 위험: {', '.join(health.warnings)}")
+            blocks.append(f"account danger: {', '.join(health.warnings)}")
         elif health.warnings:
             warnings.extend(health.warnings)
 
-        # 2. 타이밍
+        # 2. timing
         timing = check_timing(action.subreddit)
         if timing.grade == TimingGrade.AVOID:
-            blocks.append(f"타이밍: {timing.reason}")
+            blocks.append(f"timing: {timing.reason}")
         elif timing.grade == TimingGrade.POOR:
-            warnings.append(f"타이밍: {timing.reason}")
+            warnings.append(f"timing: {timing.reason}")
 
-        # 3. 스팸 체크
+        # 3. spam check
         spam = check_spam(self.db, action.action_type.value, action.subreddit, action.body)
         if not spam.allowed:
-            blocks.append(f"스팸 방지: {spam.reason}")
+            blocks.append(f"spam prevention: {spam.reason}")
 
-        # 4. 서브레딧 규칙
+        # 4. subreddit rule
         rules = check_rules(action.subreddit, action.action_type.value, action.is_self_promo)
         if not rules.allowed:
             blocks.extend(rules.blocks)
         warnings.extend(rules.warnings)
 
-        # 5. 콘텐츠 변형 + 중복 체크
+        # 5. content strain + duplication check
         varied_body = action.body
         if action.body and action.action_type in (ActionType.SEEDING, ActionType.COMMENT, ActionType.KARMA_BUILD):
-            # 기존 댓글과 유사도 체크
+            # existing comments and Similarity check
             recent = get_recent_comment_bodies(self.db)
             if is_too_similar(action.body, recent):
-                warnings.append("기존 댓글과 유사 — 변형 적용")
+                warnings.append("existing comments and analogy — strain apply")
                 varied_body = vary(action.body, level=0.4)
 
-        # 6. 딜레이 계산
+        # 6. delay calculate
         suggested_delay = 0
         if spam.suggested_delay > 0:
             suggested_delay = spam.suggested_delay
@@ -141,25 +141,25 @@ class MarketingEngine:
         )
 
     def log_executed(self, action: Action):
-        """실행 완료 기록."""
+        """execution complete record."""
         log_activity(self.db, action.action_type.value, action.subreddit, action.body)
 
     def get_budget(self) -> DailyBudget:
-        """오늘 남은 활동 예산."""
+        """today remainder activity budget."""
         return get_daily_budget(self.db)
 
     def get_health(self) -> HealthReport:
-        """계정 건강도."""
+        """account health."""
         return check_health(self.db)
 
     def analyze_comment(self, body: str, score: int = 0, upvotes: int = 0) -> NegativeAnalysis:
-        """댓글 감정 분석."""
+        """comment emotion analyze."""
         return analyze_negative(body, score, upvotes)
 
     def get_karma_building_plan(self, count: int = 3) -> list[Action]:
-        """카르마 빌딩 액션 생성.
+        """karma building action generation.
 
-        앱 언급 없이 서브레딧에서 도움이 되는 댓글을 달 계획.
+        app mention without On the subreddit helpful felled Leave a comment moon plan.
         """
         budget = self.get_budget()
         available = budget.comments_limit - budget.comments_used
@@ -178,7 +178,7 @@ class MarketingEngine:
             actions.append(Action(
                 action_type=ActionType.KARMA_BUILD,
                 subreddit=sub,
-                body="",  # 브라우저에서 포스트 읽고 직접 작성
+                body="",  # in your browser post read directly write
                 target_url="",
                 is_self_promo=False,
             ))
@@ -190,7 +190,7 @@ class MarketingEngine:
         posts: list[dict],
         topic_keywords: list[str],
     ) -> list[TargetScore]:
-        """씨뿌리기 타겟 점수 매기기."""
+        """sow seeds target score Ranking."""
         targets = []
         for p in posts:
             t = score_target(
@@ -206,11 +206,11 @@ class MarketingEngine:
         return rank_targets(targets)
 
     def get_content_variants(self, body: str, count: int = 3) -> list[str]:
-        """콘텐츠 변형 후보 생성."""
+        """content strain candidate generation."""
         return generate_variants(body, count)
 
     def format_status(self) -> str:
-        """현재 상태 요약 (클로드 코드가 읽을 수 있는 텍스트)."""
+        """today situation summation (Claude the code read number present text)."""
         health = self.get_health()
         budget = self.get_budget()
 
@@ -224,7 +224,7 @@ class MarketingEngine:
         ]
 
         if health.cooldown_remaining_sec > 0:
-            lines.append(f"Post Cooldown: {health.cooldown_remaining_sec // 60}분 남음")
+            lines.append(f"Post Cooldown: {health.cooldown_remaining_sec // 60}minute Remaining")
 
         if health.warnings:
             lines.append("Warnings:")

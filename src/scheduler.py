@@ -1,4 +1,4 @@
-"""날짜별 액션 오케스트레이터 + 실행 보고서 생성."""
+"""By date action orchestrator + execution report generation."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ REPORT_DIR = "data/reports"
 
 
 class ExecutionReport:
-    """실행 과정과 결과를 수집하여 마크다운 보고서로 출력."""
+    """execution process and the result by collecting markdown to report output of power."""
 
     def __init__(self, day_id: str, day_type: str, subreddit: str | None):
         self.day_id = day_id
@@ -63,7 +63,7 @@ class ExecutionReport:
         self.status = status
 
     def write(self):
-        """마크다운 보고서 파일 작성."""
+        """markdown report file write."""
         Path(REPORT_DIR).mkdir(parents=True, exist_ok=True)
         now_str = self.started_at.strftime("%Y-%m-%d_%H%M%S")
         filepath = Path(REPORT_DIR) / f"{self.day_id}_{now_str}.md"
@@ -90,7 +90,7 @@ class ExecutionReport:
             "",
         ]
 
-        # 포스트 결과
+        # post result
         if self.post_result:
             lines.extend([
                 "## Post",
@@ -103,7 +103,7 @@ class ExecutionReport:
                 "",
             ])
 
-        # 씨뿌리기 결과
+        # sow seeds result
         if self.seeding_results:
             lines.extend([
                 "## Seeding Comments",
@@ -124,7 +124,7 @@ class ExecutionReport:
                 "",
             ])
 
-        # 모니터링 결과
+        # monitoring result
         if self.monitor_results:
             total_new = sum(len(r.get("new_comments", [])) for r in self.monitor_results)
             lines.extend([
@@ -148,7 +148,7 @@ class ExecutionReport:
                 )
             lines.append("")
 
-            # 주요 댓글 상세
+            # main comment particular
             lines.extend(["### Notable Comments", ""])
             for mr in self.monitor_results:
                 for c in mr.get("new_comments", [])[:5]:
@@ -160,7 +160,7 @@ class ExecutionReport:
                         )
             lines.append("")
 
-        # 메트릭 결과
+        # metric result
         if self.metrics_results:
             lines.extend([
                 "## Metrics Snapshot",
@@ -179,7 +179,7 @@ class ExecutionReport:
             lines.append(f"| **Total** | **{total_up}** | **{total_cm}** |")
             lines.append("")
 
-        # 에러/경고
+        # error/warning
         if self.errors:
             lines.extend(["## Errors", ""])
             for e in self.errors:
@@ -192,7 +192,7 @@ class ExecutionReport:
                 lines.append(f"- {w}")
             lines.append("")
 
-        # 작성
+        # write
         filepath.write_text("\n".join(lines), encoding="utf-8")
         show_success(f"Report saved: {filepath}")
         return filepath
@@ -204,7 +204,7 @@ def run_day(
     dry_run: bool = False,
     auto_confirm: bool = False,
 ):
-    """특정 날짜의 캠페인 실행."""
+    """specific of date campaign execution."""
     day_id = resolve_day_id(day_input)
     plans = parse_all_days(config.campaign.docs_dir)
 
@@ -215,10 +215,10 @@ def run_day(
     plan = plans[day_id]
     db = StateDB(config.campaign.db_path)
 
-    # 실행 보고서 초기화
+    # execution report reset
     report = ExecutionReport(day_id, plan.day_type.value, plan.subreddit)
 
-    # 이미 완료된 날인지 확인
+    # already accomplished Is it day? check
     status = db.get_day_status(day_id)
     if status == "completed" and not dry_run:
         show_warning(f"{day_id} is already completed.")
@@ -226,7 +226,7 @@ def run_day(
             db.close()
             return
 
-    # 플레이스홀더 경고
+    # placeholder warning
     if plan.post and hasattr(plan.post, 'placeholders') and plan.post.placeholders:
         show_warning("Post contains unfilled placeholders:")
         for ph in plan.post.placeholders:
@@ -234,7 +234,7 @@ def run_day(
             report.add_warning(f"Unfilled placeholder: [{ph}]")
         show_warning("Edit the markdown file before posting!")
 
-    # 미리보기
+    # Preview
     show_day_plan(plan)
 
     if dry_run:
@@ -245,7 +245,7 @@ def run_day(
         db.close()
         return
 
-    # Reddit 클라이언트 초기화
+    # Reddit client reset
     try:
         client = RedditClient(config)
         username = client.verify_auth()
@@ -292,7 +292,7 @@ def run_day(
 
 
 def _dry_run_day(plan: DayPlan, db: StateDB):
-    """Dry run — 파싱 결과만 보여줌."""
+    """Dry run — farthing Results only show."""
     show_info(f"Day type: {plan.day_type.value}")
     if plan.post:
         show_info(f"Would post to {plan.subreddit}")
@@ -308,8 +308,8 @@ def _execute_post_day(
     client: RedditClient, db: StateDB, plan: DayPlan, auto_confirm: bool,
     report: ExecutionReport,
 ):
-    """POST 날 실행."""
-    # 1. 포스트 제출
+    """POST me execution."""
+    # 1. post submit
     if plan.post and plan.subreddit:
         show_info(f"\nPosting to {plan.subreddit}...")
         try:
@@ -333,7 +333,7 @@ def _execute_post_day(
             show_error(f"Failed to post: {e}")
             report.add_error(f"Post failed: {e}")
 
-    # 2. 씨뿌리기
+    # 2. sow seeds
     if plan.seeding_comments:
         show_info("\nStarting seeding comments...")
         results = execute_seeding(
@@ -351,7 +351,7 @@ def _execute_comment_mgmt_day(
     auto_confirm: bool,
     report: ExecutionReport,
 ):
-    """COMMENT_MGMT 날 실행."""
+    """COMMENT_MGMT me execution."""
     all_qa = list(plan.qa_pairs)
     for monitor_day in plan.previous_days_to_monitor:
         if monitor_day in all_plans and all_plans[monitor_day].qa_pairs:
@@ -361,7 +361,7 @@ def _execute_comment_mgmt_day(
     results = check_new_comments(client, db, qa_pairs=all_qa, auto_confirm=auto_confirm)
     report.set_monitor_results(results)
 
-    # 씨뿌리기
+    # sow seeds
     if plan.seeding_comments:
         show_info("\nStarting seeding comments...")
         seeding_results = execute_seeding(
@@ -375,7 +375,7 @@ def _execute_prep_day(
     client: RedditClient, db: StateDB, plan: DayPlan, auto_confirm: bool,
     report: ExecutionReport,
 ):
-    """PREP 날 실행 — 씨뿌리기만."""
+    """PREP me execution — Just sow seeds."""
     show_info("\nPrep day — seeding comments only (no self-promotion).")
     if plan.seeding_comments:
         results = execute_seeding(
@@ -395,7 +395,7 @@ def _execute_rest_review_day(
     auto_confirm: bool,
     report: ExecutionReport,
 ):
-    """REST/REVIEW 날 실행."""
+    """REST/REVIEW me execution."""
     show_info(f"\n{plan.day_type.value.title()} day — checking existing post comments.")
 
     all_qa = []

@@ -1,4 +1,4 @@
-"""Click CLI — 범용 Reddit 30일 마케팅 자동화 전체 터미널 컨트롤."""
+"""Click CLI — universal Reddit 30Day marketing automation entire terminal control."""
 
 from __future__ import annotations
 
@@ -25,51 +25,51 @@ from .display import (
 @click.option("--config", "config_path", default=None, help="Path to config.toml")
 @click.pass_context
 def cli(ctx, config_path):
-    """Reddit 30-Day Campaign CLI — 터미널에서 모든 것을 관리."""
+    """Reddit 30-Day Campaign CLI — in the terminal every that management."""
     ctx.ensure_object(dict)
     ctx.obj["config_path"] = config_path
 
 
 # ═══════════════════════════════════════════
-# campaign 그룹 — 캠페인 설정/계획/미리보기/이력
+# campaign group — campaign setting/plan/Preview/record
 # ═══════════════════════════════════════════
 
 @cli.group()
 def campaign():
-    """캠페인 전체 관리 — init/show/plan/day/preview/history/reset."""
+    """campaign entire management — init/show/plan/day/preview/history/reset."""
     pass
 
 
 @campaign.command()
 @click.option("--path", default="campaign.toml", help="Output path")
 def init(path):
-    """새 캠페인 설정 인터랙티브 생성."""
+    """bird campaign setting interactive generation."""
     from .campaign_config import CampaignConfig, SubTarget, PostTarget, Limits, save_campaign
 
     if Path(path).exists():
-        show_info(f"{path} 이미 존재합니다.")
-        if not click.confirm("덮어쓰시겠습니까?", default=False):
+        show_info(f"{path} already exists.")
+        if not click.confirm("Do you want to overwrite??", default=False):
             return
 
     console.print("\n[bold]Campaign Setup[/bold]\n")
 
-    name = click.prompt("  제품/프로젝트 이름", default="My Product")
-    url = click.prompt("  URL (GitHub, 웹사이트 등)", default="")
-    tagline = click.prompt("  한 줄 소개", default="")
-    category = click.prompt("  카테고리", type=click.Choice(["developer_tool", "saas", "app", "service", "community"]),
+    name = click.prompt("  product/project name", default="My Product")
+    url = click.prompt("  URL (GitHub, website etc.)", default="")
+    tagline = click.prompt("  one line introduction", default="")
+    category = click.prompt("  Category", type=click.Choice(["developer_tool", "saas", "app", "service", "community"]),
                            default="developer_tool")
-    username = click.prompt("  Reddit 사용자명", default="")
+    username = click.prompt("  Reddit username", default="")
 
-    console.print("\n  [dim]카르마 빌딩 서브레딧 (쉼표 구분)[/dim]")
-    karma_str = click.prompt("  카르마 서브레딧", default="commandline,programming,webdev")
+    console.print("\n  [dim]karma building subreddit (rest division)[/dim]")
+    karma_str = click.prompt("  karma subreddit", default="commandline,programming,webdev")
     karma_subs = [SubTarget(sub=s.strip(), keywords=[]) for s in karma_str.split(",") if s.strip()]
 
-    console.print("\n  [dim]씨뿌리기 서브레딧 (쉼표 구분)[/dim]")
-    seed_str = click.prompt("  씨뿌리기 서브레딧", default="SideProject,commandline")
+    console.print("\n  [dim]sow seeds subreddit (rest division)[/dim]")
+    seed_str = click.prompt("  sow seeds subreddit", default="SideProject,commandline")
     seed_subs = [SubTarget(sub=s.strip(), keywords=[]) for s in seed_str.split(",") if s.strip()]
 
-    console.print("\n  [dim]포스팅 서브레딧 (작은 곳부터, 쉼표 구분)[/dim]")
-    post_str = click.prompt("  포스팅 서브레딧", default="SideProject,commandline,programming")
+    console.print("\n  [dim]post subreddit (small From where, rest division)[/dim]")
+    post_str = click.prompt("  post subreddit", default="SideProject,commandline,programming")
     post_subs = [PostTarget(sub=s.strip()) for s in post_str.split(",") if s.strip()]
 
     cfg = CampaignConfig(
@@ -80,13 +80,13 @@ def init(path):
         limits=Limits(),
     )
     save_campaign(cfg, path)
-    show_success(f"캠페인 설정 저장: {path}")
+    show_success(f"campaign setting save: {path}")
 
 
 @campaign.command("show")
 @click.option("--path", default="campaign.toml", help="Campaign file path")
 def campaign_show(path):
-    """캠페인 설정 확인."""
+    """campaign setting check."""
     from .campaign_config import load_campaign
     try:
         cfg = load_campaign(path)
@@ -95,21 +95,21 @@ def campaign_show(path):
         console.print(f"  Tagline: {cfg.tagline}")
         console.print(f"  Category: {cfg.category}")
         console.print(f"  Reddit: u/{cfg.reddit_username}")
-        console.print(f"\n  [cyan]카르마 서브레딧:[/cyan] {', '.join(s.sub for s in cfg.karma_subs)}")
-        console.print(f"  [green]씨뿌리기 서브레딧:[/green] {', '.join(s.sub for s in cfg.seed_subs)}")
-        console.print(f"  [yellow]포스팅 서브레딧:[/yellow] {', '.join(p.sub for p in cfg.post_subs)}")
-        console.print(f"\n  카르마 톤: {cfg.karma_tone}")
-        console.print(f"  씨뿌리기 톤: {cfg.seed_tone}")
-        console.print(f"  일일 한도: 카르마={cfg.limits.karma_comments_per_day}, "
-                      f"씨뿌리기={cfg.limits.seed_comments_per_day}, 포스트={cfg.limits.posts_per_day}")
-        console.print(f"  딜레이: {cfg.limits.min_delay_seconds}-{cfg.limits.max_delay_seconds}초")
+        console.print(f"\n  [cyan]karma subreddit:[/cyan] {', '.join(s.sub for s in cfg.karma_subs)}")
+        console.print(f"  [green]sow seeds subreddit:[/green] {', '.join(s.sub for s in cfg.seed_subs)}")
+        console.print(f"  [yellow]post subreddit:[/yellow] {', '.join(p.sub for p in cfg.post_subs)}")
+        console.print(f"\n  Karma tone: {cfg.karma_tone}")
+        console.print(f"  Seeding tone: {cfg.seed_tone}")
+        console.print(f"  Daily limits: karma={cfg.limits.karma_comments_per_day}, "
+                      f"seeding={cfg.limits.seed_comments_per_day}, posts={cfg.limits.posts_per_day}")
+        console.print(f"  Delay: {cfg.limits.min_delay_seconds}-{cfg.limits.max_delay_seconds} seconds")
     except FileNotFoundError:
-        show_error(f"{path} 없음. 'python main.py campaign init'으로 생성하세요.")
+        show_error(f"{path} doesn't exist. 'python main.py campaign init'by Create it.")
 
 
 @campaign.command("plan")
 def campaign_plan():
-    """30일 전체 계획 상세 조회 — 날짜별 태스크/서브레딧/키워드."""
+    """30Day entire plan particular check — By date task/subreddit/keyword."""
     from .campaign_config import load_campaign, campaign_exists
     from .schedule import build_schedule, build_schedule_from_config, get_effective_schedule, TaskType, Phase
     from .state import StateDB
@@ -132,10 +132,10 @@ def campaign_plan():
         Phase.FULL_CAMPAIGN: "red",
     }
     phase_names = {
-        Phase.KARMA_BUILD: "Phase 1: 카르마 빌딩",
-        Phase.LIGHT_SEED: "Phase 2: 카르마 + 씨뿌리기",
-        Phase.SEED_AND_POST: "Phase 3: 씨뿌리기 + 포스트",
-        Phase.FULL_CAMPAIGN: "Phase 4: 본격 캠페인",
+        Phase.KARMA_BUILD: "Phase 1: karma building",
+        Phase.LIGHT_SEED: "Phase 2: karma + sow seeds",
+        Phase.SEED_AND_POST: "Phase 3: sow seeds + post",
+        Phase.FULL_CAMPAIGN: "Phase 4: authentic campaign",
     }
     task_icons = {
         TaskType.KARMA_COMMENT: "[cyan]KARMA[/cyan]",
@@ -181,7 +181,7 @@ def campaign_plan():
 @campaign.command("day")
 @click.argument("day_num", type=int)
 def campaign_day(day_num):
-    """특정 날 상세 계획 + 생성될 댓글 미리보기."""
+    """specific me particular plan + to be created comment Preview."""
     from .campaign_config import load_campaign, campaign_exists
     from .schedule import get_effective_schedule, TaskType
     from .comment_generator import generate_karma_comment, generate_seed_comment, generate_post_title, generate_post_body
@@ -200,7 +200,7 @@ def campaign_day(day_num):
             break
 
     if not day_sched:
-        show_error(f"Day {day_num} 없음 (1-30)")
+        show_error(f"Day {day_num} doesn't exist (1-30)")
         db.close()
         return
 
@@ -233,7 +233,7 @@ def campaign_day(day_num):
         if t.notes:
             console.print(f"      Notes: {t.notes}")
 
-        # 댓글 미리보기
+        # comment Preview
         if config and t.task_type == TaskType.KARMA_COMMENT:
             for sub in t.subreddits:
                 comment = generate_karma_comment(
@@ -261,14 +261,14 @@ def campaign_day(day_num):
 @click.argument("day_num", type=int)
 @click.option("--count", "-n", default=3, help="Number of comment variants to show")
 def campaign_preview(day_num, count):
-    """특정 날 댓글 변형 N개 미리보기."""
+    """specific me comment strain Ndog Preview."""
     from .campaign_config import load_campaign, campaign_exists
     from .schedule import get_effective_schedule, TaskType
     from .comment_generator import generate_karma_comment, generate_seed_comment
     from .state import StateDB
 
     if not campaign_exists():
-        show_error("campaign.toml 없음. 'python main.py campaign init' 먼저 실행.")
+        show_error("campaign.toml doesn't exist. 'python main.py campaign init' first execution.")
         return
 
     config = load_campaign()
@@ -282,10 +282,10 @@ def campaign_preview(day_num, count):
             break
 
     if not day_sched:
-        show_error(f"Day {day_num} 없음")
+        show_error(f"Day {day_num} doesn't exist")
         return
 
-    console.print(f"\n  [bold]Day {day_num} — 댓글 미리보기 (x{count})[/bold]\n")
+    console.print(f"\n  [bold]Day {day_num} — comment Preview (x{count})[/bold]\n")
 
     for t in day_sched.tasks:
         if t.task_type == TaskType.KARMA_COMMENT:
@@ -316,17 +316,17 @@ def campaign_preview(day_num, count):
 @click.option("--type", "-t", "comment_type", default=None, help="Filter: karma_build, seeding, post")
 @click.option("--limit", "-n", default=20, help="Max results")
 def campaign_history(date, comment_type, limit):
-    """활동 이력 조회 — 댓글/포스트/업보트 전체."""
+    """activity record check — comment/post/Upvote entire."""
     from .state import StateDB
 
     db = StateDB("data/campaign.db")
 
-    # 요약
+    # summation
     today = date or datetime.now().strftime("%Y-%m-%d")
     summary = db.get_activity_summary(today)
     total = db.get_activity_summary()
 
-    console.print(f"\n  [bold]=== 활동 이력 ===[/bold]")
+    console.print(f"\n  [bold]=== activity record ===[/bold]")
     console.print(f"  Date: {today}\n")
     console.print(f"  Today: comments={summary['comments_total']}, posts={summary['posts_total']}, "
                   f"browsed={summary['browsed_total']}, upvotes={summary['upvotes_total']}")
@@ -341,7 +341,7 @@ def campaign_history(date, comment_type, limit):
         subs_str = ", ".join(f"r/{r['subreddit']}={r['cnt']}" for r in summary["comments_by_sub"][:5])
         console.print(f"  Subs: {subs_str}")
 
-    # 댓글 이력
+    # comment record
     comments = db.get_comments(comment_type)
     if comments:
         console.print(f"\n  [bold]Comments ({len(comments)} total, showing last {limit}):[/bold]")
@@ -353,7 +353,7 @@ def campaign_history(date, comment_type, limit):
             if body:
                 console.print(f"    {body}")
 
-    # 포스트 이력
+    # post record
     posts = db.get_submissions()
     if posts:
         console.print(f"\n  [bold]Posts ({len(posts)}):[/bold]")
@@ -367,7 +367,7 @@ def campaign_history(date, comment_type, limit):
 
 @campaign.command("status")
 def campaign_status():
-    """캠페인 진행 상태 — 30일 전체 한눈에."""
+    """campaign progress situation — 30Day entire At a glance."""
     from .state import StateDB
     from .marketing.engine import MarketingEngine
 
@@ -386,7 +386,7 @@ def campaign_status():
 
     console.print(f"\n  [bold]Progress:[/bold] {completed}/30 done, {in_progress} running, {errors} errors\n")
 
-    # 30일 그리드
+    # 30Day grid
     line = "  "
     for day in range(1, 31):
         day_id = f"day-{day:02d}"
@@ -412,14 +412,14 @@ def campaign_status():
 @campaign.command("reset")
 @click.argument("day_num", type=int)
 def campaign_reset(day_num):
-    """특정 날 상태를 pending으로 리셋 (재실행 가능)."""
+    """specific me status pendingby reset (redo possible)."""
     from .state import StateDB
 
     day_id = f"day-{day_num:02d}"
     db = StateDB("data/campaign.db")
     db.set_day_status(day_id, "pending")
     db.close()
-    show_success(f"Day {day_num} 리셋 완료 — 재실행 가능")
+    show_success(f"Day {day_num} reset complete — redo possible")
 
 
 @campaign.command("edit-day")
@@ -432,10 +432,10 @@ def campaign_reset(day_num):
 @click.option("--clear-tasks", is_flag=True, help="Clear all tasks before adding")
 @click.option("--revert", is_flag=True, help="Revert to auto-generated schedule")
 def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, clear_tasks, revert):
-    """특정 날의 스케줄 수정 — 태스크 추가/변경/삭제.
+    """specific of the day schedule correction — task addition/change/delete.
 
     Examples:
-      campaign edit-day 5 --desc "카르마+씨뿌리기" --clear-tasks --add-karma commandline:terminal,cli --add-seed webdev:dev tools
+      campaign edit-day 5 --desc "karma+sow seeds" --clear-tasks --add-karma commandline:terminal,cli --add-seed webdev:dev tools
       campaign edit-day 10 --add-post SideProject
       campaign edit-day 7 --revert
     """
@@ -448,14 +448,14 @@ def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, cl
 
     db = StateDB("data/campaign.db")
 
-    # revert: DB 커스텀 삭제 → 자동 생성으로 복원
+    # revert: DB custom delete → automatic by creation restore
     if revert:
         db.delete_custom_schedule(day_num)
         db.close()
-        show_success(f"Day {day_num} 자동 생성 스케줄로 복원됨")
+        show_success(f"Day {day_num} automatic generation by schedule restored")
         return
 
-    # 현재 스케줄 가져오기
+    # today schedule import
     config = load_campaign() if campaign_exists() else None
     schedule = get_effective_schedule(config, db)
     day_sched = None
@@ -465,19 +465,19 @@ def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, cl
             break
 
     if not day_sched:
-        show_error(f"Day {day_num} 없음 (1-30)")
+        show_error(f"Day {day_num} doesn't exist (1-30)")
         db.close()
         return
 
-    # 설명 변경
+    # explanation change
     if desc:
         day_sched.description = desc
 
-    # 태스크 클리어
+    # task clear
     if clear_tasks:
         day_sched.tasks = []
 
-    # 카르마 태스크 추가
+    # karma task addition
     for kt in add_karma:
         parts = kt.split(":", 1)
         sub = parts[0].strip()
@@ -487,10 +487,10 @@ def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, cl
             subreddits=[sub],
             search_keywords=keywords,
             max_comments=2,
-            notes=f"r/{sub}에서 도움 댓글 (앱 언급 금지)",
+            notes=f"r/{sub}at help comment (app mention prohibition)",
         ))
 
-    # 씨뿌리기 태스크 추가
+    # sow seeds task addition
     for st_val in add_seed:
         parts = st_val.split(":", 1)
         sub = parts[0].strip()
@@ -500,22 +500,22 @@ def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, cl
             subreddits=[sub],
             search_keywords=keywords,
             max_comments=1,
-            notes=f"씨뿌리기: r/{sub} (자연스러운 언급)",
+            notes=f"sow seeds: r/{sub} (natural mention)",
         ))
 
-    # 포스트 태스크 추가
+    # post task addition
     if add_post:
         day_sched.tasks.append(DayTask(
             task_type=TaskType.POST,
             post_subreddit=add_post,
-            notes=f"r/{add_post}에 포스트",
+            notes=f"r/{add_post}to post",
         ))
 
-    # 휴식 태스크 추가
+    # rest task addition
     if add_rest:
-        day_sched.tasks = [DayTask(task_type=TaskType.REST, notes="휴식")]
+        day_sched.tasks = [DayTask(task_type=TaskType.REST, notes="rest")]
 
-    # DB에 저장
+    # DBto save
     import json as _json
     tasks_json = _json.dumps([
         {"task_type": t.task_type.value, "subreddits": t.subreddits,
@@ -526,9 +526,9 @@ def campaign_edit_day(day_num, desc, add_karma, add_seed, add_post, add_rest, cl
     db.save_custom_schedule(day_num, day_sched.phase.value, day_sched.description, tasks_json)
     db.close()
 
-    show_success(f"Day {day_num} 스케줄 저장 완료")
+    show_success(f"Day {day_num} schedule save complete")
     console.print(f"  Description: {day_sched.description}")
-    console.print(f"  Tasks: {len(day_sched.tasks)}개")
+    console.print(f"  Tasks: {len(day_sched.tasks)}dog")
     for i, t in enumerate(day_sched.tasks, 1):
         parts = [f"    [{i}] {t.task_type.value.upper()}"]
         if t.subreddits:
@@ -544,7 +544,7 @@ cli.add_command(campaign)
 
 
 # ═══════════════════════════════════════════
-# browser — 레딧브라우저 자동화 실행
+# browser — Reddit Browser automation execution
 # ═══════════════════════════════════════════
 
 @cli.command()
@@ -557,7 +557,7 @@ cli.add_command(campaign)
 @click.option("--campaign", "campaign_path", default=None, help="Path to campaign.toml")
 @click.pass_context
 def browser(ctx, run_all, show_schedule, show_status, dry_run, delay, start_day, campaign_path):
-    """레딧브라우저로 전자동 실행 — API 키 불필요."""
+    """Fully automated Reddit browser execution - no API key required."""
     if show_schedule:
         from .autopilot_browser import show_schedule as _show
         _show(campaign_path)
@@ -571,7 +571,7 @@ def browser(ctx, run_all, show_schedule, show_status, dry_run, delay, start_day,
         console.print(engine.format_status())
         statuses = db.get_all_day_statuses()
         if statuses:
-            console.print("\n  진행 현황:")
+            console.print("\n  progress current situation:")
             for s in statuses:
                 icon = {"completed": "[green]OK[/green]", "in_progress": "[yellow]...[/yellow]",
                         "error": "[red]ERR[/red]"}.get(s["status"], s["status"])
@@ -591,14 +591,14 @@ def browser(ctx, run_all, show_schedule, show_status, dry_run, delay, start_day,
 
 
 # ═══════════════════════════════════════════
-# 기존 명령어들
+# existing commands
 # ═══════════════════════════════════════════
 
 @cli.command()
 @click.option("--date", "date_str", default=None, help="Date (YYYY-MM-DD)")
 @click.pass_context
 def summary(ctx, date_str):
-    """모니터링 로그에서 일별 종합 요약."""
+    """monitoring from log glance synthesis summation."""
     from .monitor import generate_daily_summary
     generate_daily_summary(date_str=date_str)
 
@@ -608,7 +608,7 @@ def summary(ctx, date_str):
 @click.option("--url", default=None, help="Reddit post permalink")
 @click.pass_context
 def influence(ctx, user, url):
-    """Reddit 영향력 분석."""
+    """Reddit influence analyze."""
     from .influence import fetch_influence_data, show_influence_summary, write_influence_report
     from .state import StateDB
     cfg = load_config(ctx.obj.get("config_path"))
@@ -628,7 +628,7 @@ def influence(ctx, user, url):
 @click.option("--date", "-d", default=None, help="Date filter (YYYY-MM-DD)")
 @click.pass_context
 def dashboard(ctx, date):
-    """Reddit 활동 대시보드."""
+    """Reddit activity dashboard."""
     from .dashboard import show_dashboard
     show_dashboard(date=date)
 
@@ -636,7 +636,7 @@ def dashboard(ctx, date):
 @cli.command()
 @click.option("--karma", "-k", default=0, type=int, help="Current karma")
 def report(karma):
-    """매일 전략 리포트 생성."""
+    """everyday strategy report generation."""
     from .state import StateDB
     from .strategy_advisor import format_strategy_report, generate_daily_report, suggest_next_day_strategy
 
@@ -662,9 +662,8 @@ def report(karma):
 @click.option("--port", "-p", default=8090, help="Server port")
 @click.option("--host", default="0.0.0.0", help="Server host")
 def web(port, host):
-    """웹 대시보드 서버."""
+    """web dashboard server."""
     from .web_dashboard import run_web_dashboard
     show_info(f"Starting web dashboard on http://localhost:{port}")
     run_web_dashboard(port=port)
-
 
